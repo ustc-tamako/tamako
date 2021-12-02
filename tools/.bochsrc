@@ -1,0 +1,34 @@
+# ------------------------------------------------------------
+# Bochs 配置文件
+#
+# ------------------------------------------------------------
+
+# 开始 gdb 联合调试，这很重要
+# gdbstub: enabled=1,port=1234,text_base=0,data_base=0,bss_base=0
+
+# 内存
+megs: 32
+
+# ROM 文件
+romimage: file="$BXSHARE/BIOS-bochs-latest"
+vgaromimage: file="$BXSHARE/VGABIOS-lgpl-latest"
+
+# 软盘
+floppya: 1_44="$HOME/tamako/floppy.img", status=inserted
+boot: a
+
+# 启动设备为软盘
+boot: floppy
+
+# 鼠标 不启用
+mouse: enabled=0
+
+# 键盘 启用 US 键盘映射
+keyboard: keymap="$BXSHARE/keymaps/x11-pc-us.map"
+
+# CPU 配置
+clock: sync=realtime
+cpu: ips=1000000
+
+# 打印信息
+log:"$HOME/tamako/logs/bochsout.txt"
