@@ -54,8 +54,11 @@ qemu:
 bochs:
 	bochs -f tools/.bochsrc
 
-.PHONY:debug
-debug:
+.PHONY:dqemu
+dqemu:
 	qemu -S -s -fda floppy.img -boot a &
-	sleep 1
-	cgdb -x tools/gdbinit
+
+.PHONY:dbochs
+dbochs:
+	bochs-gdb -f tools/.dbochsrc
+	
