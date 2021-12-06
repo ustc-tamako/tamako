@@ -1,0 +1,374 @@
+
+tamako_kernel:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00100000 <start-0xc>:
+  100000:	02 b0 ad 1b 03 00    	add    dh,BYTE PTR [eax+0x31bad]
+  100006:	00 00                	add    BYTE PTR [eax],al
+  100008:	fb                   	sti    
+  100009:	4f                   	dec    edi
+  10000a:	52                   	push   edx
+  10000b:	e4                 	  in     al,0xfa
+
+0010000c <start>:
+  10000c:	fa                   	cli    
+  10000d:	bc 03 80 00 00       	mov    esp,0x8003
+  100012:	bd 00 00 00 00       	mov    ebp,0x0
+  100017:	83 e4 f0             	and    esp,0xfffffff0
+  10001a:	89 1d 00 a0 10 00    	mov    DWORD PTR ds:0x10a000,ebx
+  100020:	e8 03 00 00 00       	call   100028 <kern_entry>
+
+00100025 <stop>:
+  100025:	f4                   	hlt    
+  100026:	eb fd                	jmp    100025 <stop>
+
+00100028 <kern_entry>:
+  100028:	f3 0f 1e fb          	endbr32 
+  10002c:	55                   	push   ebp
+  10002d:	89 e5                	mov    ebp,esp
+  10002f:	83 ec 08             	sub    esp,0x8
+  100032:	e8 31 01 00 00       	call   100168 <console_clear>
+  100037:	83 ec 04             	sub    esp,0x4
+  10003a:	6a 02                	push   0x2
+  10003c:	6a 00                	push   0x0
+  10003e:	68 04 10 10 00       	push   0x101004
+  100043:	e8 e5 02 00 00       	call   10032d <console_write_color>
+  100048:	83 c4 10             	add    esp,0x10
+  10004b:	b8 00 00 00 00       	mov    eax,0x0
+  100050:	c9                   	leave  
+  100051:	c3                   	ret    
+
+00100052 <move_cursor>:
+  100052:	f3 0f 1e fb          	endbr32 
+  100056:	55                   	push   ebp
+  100057:	89 e5                	mov    ebp,esp
+  100059:	83 ec 18             	sub    esp,0x18
+  10005c:	0f b6 05 05 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a005
+  100063:	0f b6 d0             	movzx  edx,al
+  100066:	89 d0                	mov    eax,edx
+  100068:	c1 e0 02             	shl    eax,0x2
+  10006b:	01 d0                	add    eax,edx
+  10006d:	c1 e0 04             	shl    eax,0x4
+  100070:	89 c2                	mov    edx,eax
+  100072:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  100079:	0f b6 c0             	movzx  eax,al
+  10007c:	01 d0                	add    eax,edx
+  10007e:	66 89 45 f6          	mov    WORD PTR [ebp-0xa],ax
+  100082:	83 ec 08             	sub    esp,0x8
+  100085:	6a 0e                	push   0xe
+  100087:	68 d4 03 00 00       	push   0x3d4
+  10008c:	e8 d7 02 00 00       	call   100368 <outb>
+  100091:	83 c4 10             	add    esp,0x10
+  100094:	0f b7 45 f6          	movzx  eax,WORD PTR [ebp-0xa]
+  100098:	66 c1 e8 08          	shr    ax,0x8
+  10009c:	0f b6 c0             	movzx  eax,al
+  10009f:	83 ec 08             	sub    esp,0x8
+  1000a2:	50                   	push   eax
+  1000a3:	68 d5 03 00 00       	push   0x3d5
+  1000a8:	e8 bb 02 00 00       	call   100368 <outb>
+  1000ad:	83 c4 10             	add    esp,0x10
+  1000b0:	83 ec 08             	sub    esp,0x8
+  1000b3:	6a 0f                	push   0xf
+  1000b5:	68 d4 03 00 00       	push   0x3d4
+  1000ba:	e8 a9 02 00 00       	call   100368 <outb>
+  1000bf:	83 c4 10             	add    esp,0x10
+  1000c2:	0f b7 45 f6          	movzx  eax,WORD PTR [ebp-0xa]
+  1000c6:	0f b6 c0             	movzx  eax,al
+  1000c9:	83 ec 08             	sub    esp,0x8
+  1000cc:	50                   	push   eax
+  1000cd:	68 d5 03 00 00       	push   0x3d5
+  1000d2:	e8 91 02 00 00       	call   100368 <outb>
+  1000d7:	83 c4 10             	add    esp,0x10
+  1000da:	90                   	nop
+  1000db:	c9                   	leave  
+  1000dc:	c3                   	ret    
+
+001000dd <scroll>:
+  1000dd:	f3 0f 1e fb          	endbr32 
+  1000e1:	55                   	push   ebp
+  1000e2:	89 e5                	mov    ebp,esp
+  1000e4:	83 ec 10             	sub    esp,0x10
+  1000e7:	c6 45 fb 0f          	mov    BYTE PTR [ebp-0x5],0xf
+  1000eb:	0f b6 45 fb          	movzx  eax,BYTE PTR [ebp-0x5]
+  1000ef:	c1 e0 08             	shl    eax,0x8
+  1000f2:	83 c8 20             	or     eax,0x20
+  1000f5:	66 89 45 f8          	mov    WORD PTR [ebp-0x8],ax
+  1000f9:	0f b6 05 05 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a005
+  100100:	3c 18                	cmp    al,0x18
+  100102:	76 61                	jbe    100165 <scroll+0x88>
+  100104:	c7 45 fc 00 00 00 00 	mov    DWORD PTR [ebp-0x4],0x0
+  10010b:	eb 26                	jmp    100133 <scroll+0x56>
+  10010d:	a1 00 10 10 00       	mov    eax,ds:0x101000
+  100112:	8b 55 fc             	mov    edx,DWORD PTR [ebp-0x4]
+  100115:	83 c2 50             	add    edx,0x50
+  100118:	01 d2                	add    edx,edx
+  10011a:	01 d0                	add    eax,edx
+  10011c:	8b 15 00 10 10 00    	mov    edx,DWORD PTR ds:0x101000
+  100122:	8b 4d fc             	mov    ecx,DWORD PTR [ebp-0x4]
+  100125:	01 c9                	add    ecx,ecx
+  100127:	01 ca                	add    edx,ecx
+  100129:	0f b7 00             	movzx  eax,WORD PTR [eax]
+  10012c:	66 89 02             	mov    WORD PTR [edx],ax
+  10012f:	83 45 fc 01          	add    DWORD PTR [ebp-0x4],0x1
+  100133:	81 7d fc 57 02 00 00 	cmp    DWORD PTR [ebp-0x4],0x257
+  10013a:	7e d1                	jle    10010d <scroll+0x30>
+  10013c:	eb 17                	jmp    100155 <scroll+0x78>
+  10013e:	a1 00 10 10 00       	mov    eax,ds:0x101000
+  100143:	8b 55 fc             	mov    edx,DWORD PTR [ebp-0x4]
+  100146:	01 d2                	add    edx,edx
+  100148:	01 c2                	add    edx,eax
+  10014a:	0f b7 45 f8          	movzx  eax,WORD PTR [ebp-0x8]
+  10014e:	66 89 02             	mov    WORD PTR [edx],ax
+  100151:	83 45 fc 01          	add    DWORD PTR [ebp-0x4],0x1
+  100155:	81 7d fc cf 07 00 00 	cmp    DWORD PTR [ebp-0x4],0x7cf
+  10015c:	7e e0                	jle    10013e <scroll+0x61>
+  10015e:	c6 05 05 a0 10 00 18 	mov    BYTE PTR ds:0x10a005,0x18
+  100165:	90                   	nop
+  100166:	c9                   	leave  
+  100167:	c3                   	ret    
+
+00100168 <console_clear>:
+  100168:	f3 0f 1e fb          	endbr32 
+  10016c:	55                   	push   ebp
+  10016d:	89 e5                	mov    ebp,esp
+  10016f:	83 ec 18             	sub    esp,0x18
+  100172:	c6 45 f3 0f          	mov    BYTE PTR [ebp-0xd],0xf
+  100176:	0f b6 45 f3          	movzx  eax,BYTE PTR [ebp-0xd]
+  10017a:	c1 e0 08             	shl    eax,0x8
+  10017d:	83 c8 20             	or     eax,0x20
+  100180:	66 89 45 f0          	mov    WORD PTR [ebp-0x10],ax
+  100184:	c7 45 f4 00 00 00 00 	mov    DWORD PTR [ebp-0xc],0x0
+  10018b:	eb 17                	jmp    1001a4 <console_clear+0x3c>
+  10018d:	a1 00 10 10 00       	mov    eax,ds:0x101000
+  100192:	8b 55 f4             	mov    edx,DWORD PTR [ebp-0xc]
+  100195:	01 d2                	add    edx,edx
+  100197:	01 c2                	add    edx,eax
+  100199:	0f b7 45 f0          	movzx  eax,WORD PTR [ebp-0x10]
+  10019d:	66 89 02             	mov    WORD PTR [edx],ax
+  1001a0:	83 45 f4 01          	add    DWORD PTR [ebp-0xc],0x1
+  1001a4:	81 7d f4 cf 07 00 00 	cmp    DWORD PTR [ebp-0xc],0x7cf
+  1001ab:	7e e0                	jle    10018d <console_clear+0x25>
+  1001ad:	c6 05 04 a0 10 00 00 	mov    BYTE PTR ds:0x10a004,0x0
+  1001b4:	c6 05 05 a0 10 00 00 	mov    BYTE PTR ds:0x10a005,0x0
+  1001bb:	e8 92 fe ff ff       	call   100052 <move_cursor>
+  1001c0:	90                   	nop
+  1001c1:	c9                   	leave  
+  1001c2:	c3                   	ret    
+
+001001c3 <console_putc_color>:
+  1001c3:	f3 0f 1e fb          	endbr32 
+  1001c7:	55                   	push   ebp
+  1001c8:	89 e5                	mov    ebp,esp
+  1001ca:	53                   	push   ebx
+  1001cb:	83 ec 24             	sub    esp,0x24
+  1001ce:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  1001d1:	88 45 e4             	mov    BYTE PTR [ebp-0x1c],al
+  1001d4:	8b 45 0c             	mov    eax,DWORD PTR [ebp+0xc]
+  1001d7:	88 45 f7             	mov    BYTE PTR [ebp-0x9],al
+  1001da:	8b 45 10             	mov    eax,DWORD PTR [ebp+0x10]
+  1001dd:	88 45 f6             	mov    BYTE PTR [ebp-0xa],al
+  1001e0:	0f b6 45 f7          	movzx  eax,BYTE PTR [ebp-0x9]
+  1001e4:	c1 e0 04             	shl    eax,0x4
+  1001e7:	89 c2                	mov    edx,eax
+  1001e9:	0f b6 45 f6          	movzx  eax,BYTE PTR [ebp-0xa]
+  1001ed:	83 e0 0f             	and    eax,0xf
+  1001f0:	09 d0                	or     eax,edx
+  1001f2:	88 45 f5             	mov    BYTE PTR [ebp-0xb],al
+  1001f5:	0f b6 45 f5          	movzx  eax,BYTE PTR [ebp-0xb]
+  1001f9:	c1 e0 08             	shl    eax,0x8
+  1001fc:	66 89 45 f2          	mov    WORD PTR [ebp-0xe],ax
+  100200:	80 7d e4 08          	cmp    BYTE PTR [ebp-0x1c],0x8
+  100204:	75 1f                	jne    100225 <console_putc_color+0x62>
+  100206:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  10020d:	84 c0                	test   al,al
+  10020f:	74 14                	je     100225 <console_putc_color+0x62>
+  100211:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  100218:	83 e8 01             	sub    eax,0x1
+  10021b:	a2 04 a0 10 00       	mov    ds:0x10a004,al
+  100220:	e9 9d 00 00 00       	jmp    1002c2 <console_putc_color+0xff>
+  100225:	80 7d e4 09          	cmp    BYTE PTR [ebp-0x1c],0x9
+  100229:	75 17                	jne    100242 <console_putc_color+0x7f>
+  10022b:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  100232:	83 c0 04             	add    eax,0x4
+  100235:	83 e0 fc             	and    eax,0xfffffffc
+  100238:	a2 04 a0 10 00       	mov    ds:0x10a004,al
+  10023d:	e9 80 00 00 00       	jmp    1002c2 <console_putc_color+0xff>
+  100242:	80 7d e4 0d          	cmp    BYTE PTR [ebp-0x1c],0xd
+  100246:	75 09                	jne    100251 <console_putc_color+0x8e>
+  100248:	c6 05 04 a0 10 00 00 	mov    BYTE PTR ds:0x10a004,0x0
+  10024f:	eb 71                	jmp    1002c2 <console_putc_color+0xff>
+  100251:	80 7d e4 0a          	cmp    BYTE PTR [ebp-0x1c],0xa
+  100255:	75 18                	jne    10026f <console_putc_color+0xac>
+  100257:	c6 05 04 a0 10 00 00 	mov    BYTE PTR ds:0x10a004,0x0
+  10025e:	0f b6 05 05 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a005
+  100265:	83 c0 01             	add    eax,0x1
+  100268:	a2 05 a0 10 00       	mov    ds:0x10a005,al
+  10026d:	eb 53                	jmp    1002c2 <console_putc_color+0xff>
+  10026f:	80 7d e4 1f          	cmp    BYTE PTR [ebp-0x1c],0x1f
+  100273:	7e 4d                	jle    1002c2 <console_putc_color+0xff>
+  100275:	66 0f be 55 e4       	movsx  dx,BYTE PTR [ebp-0x1c]
+  10027a:	0f b7 45 f2          	movzx  eax,WORD PTR [ebp-0xe]
+  10027e:	89 d3                	mov    ebx,edx
+  100280:	09 c3                	or     ebx,eax
+  100282:	8b 0d 00 10 10 00    	mov    ecx,DWORD PTR ds:0x101000
+  100288:	0f b6 05 05 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a005
+  10028f:	0f b6 d0             	movzx  edx,al
+  100292:	89 d0                	mov    eax,edx
+  100294:	c1 e0 02             	shl    eax,0x2
+  100297:	01 d0                	add    eax,edx
+  100299:	c1 e0 04             	shl    eax,0x4
+  10029c:	89 c2                	mov    edx,eax
+  10029e:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  1002a5:	0f b6 c0             	movzx  eax,al
+  1002a8:	01 d0                	add    eax,edx
+  1002aa:	01 c0                	add    eax,eax
+  1002ac:	01 c8                	add    eax,ecx
+  1002ae:	89 da                	mov    edx,ebx
+  1002b0:	66 89 10             	mov    WORD PTR [eax],dx
+  1002b3:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  1002ba:	83 c0 01             	add    eax,0x1
+  1002bd:	a2 04 a0 10 00       	mov    ds:0x10a004,al
+  1002c2:	0f b6 05 04 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a004
+  1002c9:	3c 4f                	cmp    al,0x4f
+  1002cb:	76 16                	jbe    1002e3 <console_putc_color+0x120>
+  1002cd:	c6 05 04 a0 10 00 00 	mov    BYTE PTR ds:0x10a004,0x0
+  1002d4:	0f b6 05 05 a0 10 00 	movzx  eax,BYTE PTR ds:0x10a005
+  1002db:	83 c0 01             	add    eax,0x1
+  1002de:	a2 05 a0 10 00       	mov    ds:0x10a005,al
+  1002e3:	e8 f5 fd ff ff       	call   1000dd <scroll>
+  1002e8:	e8 65 fd ff ff       	call   100052 <move_cursor>
+  1002ed:	90                   	nop
+  1002ee:	83 c4 24             	add    esp,0x24
+  1002f1:	5b                   	pop    ebx
+  1002f2:	5d                   	pop    ebp
+  1002f3:	c3                   	ret    
+
+001002f4 <console_write>:
+  1002f4:	f3 0f 1e fb          	endbr32 
+  1002f8:	55                   	push   ebp
+  1002f9:	89 e5                	mov    ebp,esp
+  1002fb:	83 ec 08             	sub    esp,0x8
+  1002fe:	eb 1f                	jmp    10031f <console_write+0x2b>
+  100300:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  100303:	8d 50 01             	lea    edx,[eax+0x1]
+  100306:	89 55 08             	mov    DWORD PTR [ebp+0x8],edx
+  100309:	0f b6 00             	movzx  eax,BYTE PTR [eax]
+  10030c:	0f be c0             	movsx  eax,al
+  10030f:	83 ec 04             	sub    esp,0x4
+  100312:	6a 0f                	push   0xf
+  100314:	6a 00                	push   0x0
+  100316:	50                   	push   eax
+  100317:	e8 a7 fe ff ff       	call   1001c3 <console_putc_color>
+  10031c:	83 c4 10             	add    esp,0x10
+  10031f:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  100322:	0f b6 00             	movzx  eax,BYTE PTR [eax]
+  100325:	84 c0                	test   al,al
+  100327:	75 d7                	jne    100300 <console_write+0xc>
+  100329:	90                   	nop
+  10032a:	90                   	nop
+  10032b:	c9                   	leave  
+  10032c:	c3                   	ret    
+
+0010032d <console_write_color>:
+  10032d:	f3 0f 1e fb          	endbr32 
+  100331:	55                   	push   ebp
+  100332:	89 e5                	mov    ebp,esp
+  100334:	83 ec 08             	sub    esp,0x8
+  100337:	eb 21                	jmp    10035a <console_write_color+0x2d>
+  100339:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  10033c:	8d 50 01             	lea    edx,[eax+0x1]
+  10033f:	89 55 08             	mov    DWORD PTR [ebp+0x8],edx
+  100342:	0f b6 00             	movzx  eax,BYTE PTR [eax]
+  100345:	0f be c0             	movsx  eax,al
+  100348:	83 ec 04             	sub    esp,0x4
+  10034b:	ff 75 10             	push   DWORD PTR [ebp+0x10]
+  10034e:	ff 75 0c             	push   DWORD PTR [ebp+0xc]
+  100351:	50                   	push   eax
+  100352:	e8 6c fe ff ff       	call   1001c3 <console_putc_color>
+  100357:	83 c4 10             	add    esp,0x10
+  10035a:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  10035d:	0f b6 00             	movzx  eax,BYTE PTR [eax]
+  100360:	84 c0                	test   al,al
+  100362:	75 d5                	jne    100339 <console_write_color+0xc>
+  100364:	90                   	nop
+  100365:	90                   	nop
+  100366:	c9                   	leave  
+  100367:	c3                   	ret    
+
+00100368 <outb>:
+  100368:	f3 0f 1e fb          	endbr32 
+  10036c:	55                   	push   ebp
+  10036d:	89 e5                	mov    ebp,esp
+  10036f:	83 ec 08             	sub    esp,0x8
+  100372:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  100375:	8b 55 0c             	mov    edx,DWORD PTR [ebp+0xc]
+  100378:	66 89 45 fc          	mov    WORD PTR [ebp-0x4],ax
+  10037c:	89 d0                	mov    eax,edx
+  10037e:	88 45 f8             	mov    BYTE PTR [ebp-0x8],al
+  100381:	0f b7 55 fc          	movzx  edx,WORD PTR [ebp-0x4]
+  100385:	0f b6 45 f8          	movzx  eax,BYTE PTR [ebp-0x8]
+  100389:	ee                   	out    dx,al
+  10038a:	90                   	nop
+  10038b:	c9                   	leave  
+  10038c:	c3                   	ret    
+
+0010038d <inb>:
+  10038d:	f3 0f 1e fb          	endbr32 
+  100391:	55                   	push   ebp
+  100392:	89 e5                	mov    ebp,esp
+  100394:	83 ec 14             	sub    esp,0x14
+  100397:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  10039a:	66 89 45 ec          	mov    WORD PTR [ebp-0x14],ax
+  10039e:	0f b7 45 ec          	movzx  eax,WORD PTR [ebp-0x14]
+  1003a2:	89 c2                	mov    edx,eax
+  1003a4:	ec                   	in     al,dx
+  1003a5:	88 45 ff             	mov    BYTE PTR [ebp-0x1],al
+  1003a8:	0f b6 45 ff          	movzx  eax,BYTE PTR [ebp-0x1]
+  1003ac:	c9                   	leave  
+  1003ad:	c3                   	ret    
+
+001003ae <inw>:
+  1003ae:	f3 0f 1e fb          	endbr32 
+  1003b2:	55                   	push   ebp
+  1003b3:	89 e5                	mov    ebp,esp
+  1003b5:	83 ec 14             	sub    esp,0x14
+  1003b8:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  1003bb:	66 89 45 ec          	mov    WORD PTR [ebp-0x14],ax
+  1003bf:	0f b7 45 ec          	movzx  eax,WORD PTR [ebp-0x14]
+  1003c3:	89 c2                	mov    edx,eax
+  1003c5:	66 ed                	in     ax,dx
+  1003c7:	66 89 45 fe          	mov    WORD PTR [ebp-0x2],ax
+  1003cb:	0f b7 45 fe          	movzx  eax,WORD PTR [ebp-0x2]
+  1003cf:	c9                   	leave  
+  1003d0:	c3                   	ret    
+  ...
+  100fff:	90                   	nop
+
+Disassembly of section .data:
+
+00101000 <video_memory>:
+  101000:	00 80 0b 00 48 65    	add    BYTE PTR [eax+0x6548000b],al
+  101006:	6c                   	ins    BYTE PTR es:[edi],dx
+  101007:	6c                   	ins    BYTE PTR es:[edi],dx
+  101008:	6f                   	outs   dx,DWORD PTR ds:[esi]
+  101009:	20 57 6f             	and    BYTE PTR [edi+0x6f],dl
+  10100c:	72 6c                	jb     10107a <video_memory+0x7a>
+  10100e:	64 21 0a             	and    DWORD PTR fs:[edx],ecx
+	...
+
+Disassembly of section .bss:
+
+00102000 <stack>:
+	...
+
+0010a000 <glb_mboot_ptr>:
+  10a000:	00 00                	add    BYTE PTR [eax],al
+	...
+
+0010a004 <cursor_x>:
+	...
+
+0010a005 <cursor_y>:
+	...
