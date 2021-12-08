@@ -3,7 +3,7 @@
     isr%1:
         cli
         push 0          ; push err_code
-        push %1         ; push int_no
+        push %1         ; push intr_no
         jmp isr_common_stub
 %endmacro
 
@@ -79,7 +79,7 @@ isr_common_stub:
     mov ss, bx
 
     popa            ; pop edi, esi, ebp, esp, ebx, edx, ecx, eax
-    add esp, 8      ; 清空 int_no 和 err_code
+    add esp, 8      ; 清空 intr_no 和 err_code
     
     iret
 

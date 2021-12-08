@@ -16,14 +16,14 @@ extern void gdt_flush(uint32_t);
 
 static void gdt_set_gate(int32_t idx, uint32_t base, uint32_t limit, uint8_t access, uint8_t gran)
 {
-    gdt[idx].base_low = base & 0xFFFF;
-    gdt[idx].base_middle = (base >> 16) & 0xFF;
-    gdt[idx].base_high = (base >> 24) & 0xFF;
+    gdt[idx].base_low     = base & 0xFFFF;
+    gdt[idx].base_middle  = (base >> 16) & 0xFF;
+    gdt[idx].base_high    = (base >> 24) & 0xFF;
 
-    gdt[idx].limit_low = limit & 0xFFFF;
-    gdt[idx].granularity = (limit >> 16) & 0xFF;
+    gdt[idx].limit_low    = limit & 0xFFFF;
+    gdt[idx].granularity  = (limit >> 16) & 0x0F;
 
-    gdt[idx].access = access;
+    gdt[idx].access       = access;
     gdt[idx].granularity |= gran & 0xF0;
 }
 

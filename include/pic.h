@@ -7,6 +7,6 @@
 void pic_init();
 
 // 清除中断标志
-void clear_irq(uint32_t int_no);
+void clear_irq(uint32_t intr_no);
 
 #endif  // INCLUDE_PIC_H_

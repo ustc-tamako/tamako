@@ -4,8 +4,6 @@
 #include "types.h"
 #include "multiboot.h"
 
-#define ELF32_ST_TYPE(i) ((i)&0xf)
-
 // ELF 格式区段头
 typedef
 struct elf_section_header_t {

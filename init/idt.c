@@ -1,27 +1,38 @@
 #include "idt.h"
+#include "pic.h"
+#include "isr.h"
+#include "string.h"
 
 #define IDT_LENGTH 256
 
-int_desc_t idt[IDT_LENGTH];
+intr_desc_t idt[IDT_LENGTH];
 idtr_t idtr;
+
+extern intr_handler_t intr_handler_table[IDT_LENGTH];
 
 // 将 IDT 首址加载到 IDTR
 extern void idt_flush(uint32_t);
 
 static void idt_set_gate(uint32_t idx, uint32_t base, uint16_t sel, uint8_t flags)
 {
-    idt[idx].base_low = base & 0xFFFF;
+    idt[idx].base_low  = base & 0xFFFF;
     idt[idx].base_high = (base >> 16) & 0xFFFF;
 
-    idt[idx].sel = sel;
-    idt[idx].always0 = 0;
-    idt[idx].flags = flags;     // | 0x60
+    idt[idx].sel       = sel;
+    idt[idx].always0   = 0;
+    idt[idx].flags     = flags;     // | 0x60
 }
 
 void setup_idt()
 {
-    idtr.limit = sizeof(int_desc_t) * IDT_LENGTH - 1;
+    bzero((uint8_t *) &intr_handler_table, sizeof(intr_handler_t) * IDT_LENGTH);
+    bzero((uint8_t *) &idt, sizeof(intr_desc_t) * IDT_LENGTH);
+
+    idtr.limit = sizeof(intr_desc_t) * IDT_LENGTH - 1;
     idtr.base = (uint32_t) &idt;
+
+    // 初始化中断控制器
+    pic_init();
 
     // 0 - 19
     idt_set_gate( 0, (uint32_t)isr0,  0x08, 0x8E);

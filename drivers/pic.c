@@ -31,9 +31,9 @@ void pic_init()
     outb(PIC2_DATA, 0x00);
 }
 
-void clear_irq(uint32_t int_no) {
+void clear_irq(uint32_t intr_no) {
     // OCW2 设置中断结束
-    if (int_no >= 40) {
+    if (intr_no >= 40) {
         outb(PIC2_CMD, 0x20);
     }
     outb(PIC1_CMD, 0x20);

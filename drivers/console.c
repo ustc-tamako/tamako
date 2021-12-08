@@ -1,8 +1,8 @@
 #include "common.h"
 #include "console.h"
 
-#define CONSOLE_ROWS 80
-#define CONSOLE_COLUMNS 25
+#define CON_ROWS 25
+#define CON_COLS 80
 
 static uint16_t * video_memory = (uint16_t *)0xB8000;
 
@@ -11,7 +11,7 @@ static uint8_t cursor_y = 0;
 
 static void move_cursor()
 {
-    uint16_t cursor_location = cursor_y * CONSOLE_ROWS + cursor_x;
+    uint16_t cursor_location = cursor_y * CON_COLS + cursor_x;
 
     // 在这里用到的两个内部寄存器的编号为14与15，分别表示光标位置
     // 的高8位与低8位。
@@ -27,18 +27,18 @@ static void scroll()
     uint8_t attribute_byte = (0 /*black*/ << 4) | (15 /*white*/ & 0x0F);
     uint16_t blank = 0x20 /*space*/ | (attribute_byte << 8);
 
-    if (cursor_y >= 25) {
+    if (cursor_y >= CON_ROWS) {
         int i;
 
-        for (i = 0 * CONSOLE_ROWS; i < (CONSOLE_COLUMNS-1) * CONSOLE_COLUMNS; i++) {
-            video_memory[i] = video_memory[i + CONSOLE_ROWS];
+        for (i = 0 * CON_COLS; i < (CON_ROWS-1) * CON_COLS; i++) {
+            video_memory[i] = video_memory[i + CON_COLS];
         }
 
-        for (; i < CONSOLE_COLUMNS * CONSOLE_ROWS; i++) {
+        for (; i < CON_ROWS * CON_COLS; i++) {
             video_memory[i] = blank;
         }
 
-        cursor_y = 24;
+        cursor_y = CON_ROWS-1;
     }
 }
 
@@ -47,7 +47,7 @@ void console_clear()
     uint8_t attribute_byte = (0 /*black*/ << 4) | (15 /*white*/ & 0x0F);
     uint16_t blank = 0x20 /*space*/ | (attribute_byte << 8);
 
-     for (int i = 0; i < CONSOLE_ROWS * CONSOLE_COLUMNS; i++) {
+     for (int i = 0; i < CON_ROWS * CON_COLS; i++) {
          video_memory[i] = blank;
      }
 
@@ -78,11 +78,11 @@ void console_putc_color(char c, real_color_t back, real_color_t fore)
         cursor_y++;
     } 
     else if (c >= ' ') {
-        video_memory[cursor_y * CONSOLE_ROWS + cursor_x] = c | attribute;
+        video_memory[cursor_y * CON_COLS + cursor_x] = c | attribute;
         cursor_x++;
     }
 
-    if (cursor_x >= CONSOLE_ROWS) {
+    if (cursor_x >= CON_COLS) {
         cursor_x = 0;
         cursor_y++;
     }

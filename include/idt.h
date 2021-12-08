@@ -5,13 +5,13 @@
 
 // 64 位中断描述符类型
 typedef
-struct int_desc_t {
+struct intr_desc_t {
     uint16_t base_low;      // 中断处理函数地址  15 - 0
     uint16_t sel;           // 段选择子
-    uint8_t always0;        // 赋值为0的部分
-    uint8_t flags;          // 标志位
+    uint8_t  always0;        // 赋值为0的部分
+    uint8_t  flags;          // 标志位
     uint16_t base_high;     // 中断处理函数地址  31 - 16
-} __attribute__((packed)) int_desc_t;
+} __attribute__((packed)) intr_desc_t;
 
 // IDTR
 typedef

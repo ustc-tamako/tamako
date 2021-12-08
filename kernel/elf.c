@@ -1,6 +1,8 @@
 #include "string.h"
 #include "elf.h"
 
+#define ELF32_ST_TYPE(i) ((i)&0xf)
+
 elf_t elf_from_multiboot(multiboot_t * mb)
 {
     elf_t elf;

@@ -10,7 +10,7 @@ void debug_init()
     kernel_elf = elf_from_multiboot(glb_mboot_ptr);
 }
 
-void print_cur_status()
+void print_sreg()
 {
     static int round = 0;
     uint16_t cs, ds, es, ss;

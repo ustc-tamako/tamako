@@ -1,5 +1,5 @@
-#ifndef INCLUDE_CONSOLE_H
-#define INCLUDE_CONSOLE_H
+#ifndef INCLUDE_CONSOLE_H_
+#define INCLUDE_CONSOLE_H_
 
 #include "types.h"
 

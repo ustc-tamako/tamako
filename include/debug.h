@@ -1,14 +1,6 @@
 #ifndef INCLUDE_DEBUG_H_
 #define INCLUDE_DEBUG_H_
 
-#define assert(x, info) (    \
-    do {                     \
-        if (!(x)) {          \
-            panic(info);     \
-        }                    \
-    } while(0)               \
-)
-
 // 初始化Debug 信息
 void debug_init();
 
@@ -16,6 +8,6 @@ void debug_init();
 void panic(const char * msg);
 
 // 打印当前的段寄存器值
-void print_cur_status();
+void print_sreg();
 
 #endif  // INCLUDE_DEBUG_H_

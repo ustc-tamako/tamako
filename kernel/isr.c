@@ -7,34 +7,34 @@
 #endif
 
 // 全局中断处理函数表
-interrupt_handler_t int_handler_table[IDT_LENGTH];
+intr_handler_t intr_handler_table[IDT_LENGTH];
 
-void register_interrupt_handler(uint8_t idx, interrupt_handler_t handler)
+void register_intr_handler(uint8_t idx, intr_handler_t handler)
 {
-    int_handler_table[idx] = handler;
+    intr_handler_table[idx] = handler;
 }
 
 void isr_handler(pt_regs_t * regs)
 {
-    uint32_t int_no = regs->int_no;
-    if (int_handler_table[int_no] != NULL) {
-        int_handler_table[int_no](regs);
+    uint32_t intr_no = regs->intr_no;
+    if (intr_handler_table[intr_no] != NULL) {
+        intr_handler_table[intr_no](regs);
     }
     else {
-        printk("Unhandled Interrupt: %d\n", int_no);
+        printk("Unhandled Interrupt: %d\n", intr_no);
     }
 }
 
 void irq_handler(pt_regs_t * regs)
 {
-    uint32_t int_no = regs->int_no;
+    uint32_t intr_no = regs->intr_no;
 
-    clear_irq(int_no);
+    clear_irq(intr_no);
 
-    if (int_handler_table[int_no] != NULL) {
-        int_handler_table[int_no](regs);
+    if (intr_handler_table[intr_no] != NULL) {
+        intr_handler_table[intr_no](regs);
     }
     else {
-        printk("Unhandled Interrupt: %d\n", int_no);
+        printk("Unhandled Interrupt: %d\n", intr_no);
     }
 }
