@@ -1,6 +1,6 @@
 #include "vargs.h"
 #include "console.h"
-#include "debug.h"
+#include "printk.h"
 
 extern int vsprintf(char * buf, const char * fmt, va_list args);
 

@@ -1,5 +1,6 @@
 #include "debug.h"
-#include "string.h"
+#include "elf.h"
+#include "printk.h"
 
 static elf_t kernel_elf;
 

@@ -3,9 +3,6 @@
 
 #include "types.h"
 
-#define CONSOLE_ROWS 80
-#define CONSOLE_COLUMNS 25
-
 typedef
 enum real_color {
     rc_black = 0,

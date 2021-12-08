@@ -1,6 +1,9 @@
 #include "common.h"
 #include "console.h"
 
+#define CONSOLE_ROWS 80
+#define CONSOLE_COLUMNS 25
+
 static uint16_t * video_memory = (uint16_t *)0xB8000;
 
 static uint8_t cursor_x = 0;
