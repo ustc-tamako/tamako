@@ -10,12 +10,10 @@ megs: 32
 romimage: file="$BXSHARE/BIOS-bochs-latest"
 vgaromimage: file="$BXSHARE/VGABIOS-lgpl-latest"
 
-# 软盘
-floppya: 1_44="$HOME/tamako/floppy.img", status=inserted
-boot: a
-
-# 启动设备为软盘
-boot: floppy
+# 从硬盘启动
+boot: disk
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+ata0-master: type=disk, path="$HOME/tamako/tamako.img", mode=flat
 
 # 鼠标 不启用
 mouse: enabled=0

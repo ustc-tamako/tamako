@@ -4,7 +4,7 @@
 #include "printk.h"
 
 #define FREQ_IN     1193180
-#define FREQ_OUT    100
+#define FREQ_OUT    5
 
 // 8253/8254 PIT 寄存器
 #define PIT_TIMER   0x40

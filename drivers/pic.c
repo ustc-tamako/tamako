@@ -2,7 +2,7 @@
 #include "common.h"
 
 // Master - command: 0x20, data: 0x21
-//  Slave - command: 0xA0, data: 0xA1
+// Slave - command: 0xA0, data: 0xA1
 #define PIC1_CMD    (0x20)
 #define PIC2_CMD    (0xA0)
 #define PIC1_DATA   (0x21)

@@ -4,14 +4,16 @@
 
 ```shell
 make
-make bochs
+make install
+./boot.sh -b
 ```
 
 ## Start with Qemu
 
 ```shell
 make
-make qemu
+make install
+./boot.sh -q
 ```
 
 ## GDB in Bochs
@@ -36,12 +38,14 @@ sudo cp /opt/bochs/gdbstub/bin/bochs /usr/bin/bochs-gdb
 
 ```shell
 make
-make dbochs
+make install
+./boot.sh -bd
 ```
 
 ## GDB in Qemu
 
 ```shell
 make
-make dqemu
+make install
+./boot.sh -qd
 ```
