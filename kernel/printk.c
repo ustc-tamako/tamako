@@ -4,32 +4,32 @@
 
 extern int vsprintf(char * buf, const char * fmt, va_list args);
 
-void cprintk(const char * fmt, ...)
-{
-    static char buf[1024];
-    va_list args;
-    int i;
-
-    va_start(args, fmt);
-    i = vsprintf(buf, fmt, args);
-    va_end(args);
-
-    buf[i] = '\0';
-
-    console_write(buf);
-}
-
 void printk(const char * fmt, ...)
 {
-    static char buf[1024];
-    va_list args;
-    int i;
+	static char buf[1024];
+	va_list args;
+	int i;
 
-    va_start(args, fmt);
-    i = vsprintf(buf, fmt, args);
-    va_end(args);
+	va_start(args, fmt);
+	i = vsprintf(buf, fmt, args);
+	va_end(args);
 
-    buf[i] = '\0';
+	buf[i] = '\0';
 
-    console_write(buf);
+	console_write(buf);
+}
+
+void cprintk(const char * fmt, ...)
+{
+	static char buf[1024];
+	va_list args;
+	int i;
+
+	va_start(args, fmt);
+	i = vsprintf(buf, fmt, args);
+	va_end(args);
+
+	buf[i] = '\0';
+
+	console_write(buf);
 }

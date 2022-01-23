@@ -10,4 +10,9 @@ void panic(const char * msg);
 // 打印当前的段寄存器值
 void print_sreg();
 
+// 打印物理内存段
+void print_mm_map();
+
+void no_bug_please();
+
 #endif  // INCLUDE_DEBUG_H_

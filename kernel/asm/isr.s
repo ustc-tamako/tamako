@@ -1,18 +1,18 @@
 %macro ISR_NOERRCODE 1  ; 宏定义，接收一个变量
-    [GLOBAL isr%1]
-    isr%1:
-        cli
-        push 0          ; push err_code
-        push %1         ; push intr_no
-        jmp isr_common_stub
+	[GLOBAL isr%1]
+	isr%1:
+		cli
+		push 0          ; push err_code
+		push %1         ; push intr_no
+		jmp isr_common_stub
 %endmacro
 
 %macro ISR_ERRCODE 1
-    [GLOBAL isr%1]
-    isr%1:
-        cli
-        push %1
-        jmp isr_common_stub
+	[GLOBAL isr%1]
+	isr%1:
+		cli
+		push %1
+		jmp isr_common_stub
 %endmacro
 
 ; 实现中断处理函数
@@ -56,41 +56,41 @@ ISR_NOERRCODE 31
 
 [GLOBAL isr_common_stub]
 isr_common_stub:
-    pusha           ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
-    mov ax, ds
-    push eax        ; push ds
+	pusha           ; push eax, ecx, edx, ebx, esp, ebp, esi, edi
+	mov ax, ds
+	push eax        ; push ds
 
-    mov ax, 0x10    ; 加载内核数据段描述符
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
+	mov ax, 0x10    ; 加载内核数据段描述符
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
 
-    push esp        ; 压入 pt_regs_t 指针，作为服务函数的参数
-    call isr_handler
-    add esp, 4      ; 清空输入参数
+	push esp        ; 压入 pt_regs_t 指针，作为服务函数的参数
+	call isr_handler
+	add esp, 4      ; 清空输入参数
 
-    pop ebx         ; pop ds
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-    mov gs, bx
-    mov ss, bx
+	pop ebx         ; pop ds
+	mov ds, bx
+	mov es, bx
+	mov fs, bx
+	mov gs, bx
+	mov ss, bx
 
-    popa            ; pop edi, esi, ebp, esp, ebx, edx, ecx, eax
-    add esp, 8      ; 清空 intr_no 和 err_code
-    
-    iret
+	popa            ; pop edi, esi, ebp, esp, ebx, edx, ecx, eax
+	add esp, 8      ; 清空 intr_no 和 err_code
+	
+	iret
 
 
 %macro IRQ 2            ; 接受两个变量。分别为 IRQ 号 (0 - 15) 和中断向量号 (32 - 47)
-    [GLOBAL irq%1]
-    irq%1:
-        cli
-        push 0
-        push %2
-        jmp irq_common_stub
+	[GLOBAL irq%1]
+	irq%1:
+		cli
+		push 0
+		push %2
+		jmp irq_common_stub
 %endmacro
 
 ; 32 - 47
@@ -115,29 +115,29 @@ IRQ  15,    47      ; 47 IDE1 传输控制使用
 
 [GLOBAL irq_common_stub]
 irq_common_stub:
-    pusha
-    mov ax, ds
-    push eax
+	pusha
+	mov ax, ds
+	push eax
 
-    mov ax, 0x10
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
 
-    push esp
-    call irq_handler
-    add esp, 4
+	push esp
+	call irq_handler
+	add esp, 4
 
-    pop ebx
-    mov ds, bx
-    mov es, bx
-    mov fs, bx
-    mov gs, bx
-    mov ss, bx
+	pop ebx
+	mov ds, bx
+	mov es, bx
+	mov fs, bx
+	mov gs, bx
+	mov ss, bx
 
-    popa
-    add esp, 8
+	popa
+	add esp, 8
 
-    iret
+	iret

@@ -9,7 +9,7 @@ typedef void (* intr_handler_t)(pt_regs_t *);
 // 注册一个中断处理函数
 void register_intr_handler(uint8_t idx, intr_handler_t handler);
 
-// 中断处理函数
+// 异常处理函数
 void isr_handler(pt_regs_t * regs);
 
 // IRQ 处理函数

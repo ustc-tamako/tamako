@@ -2,43 +2,60 @@
  *      kernel.ld -- 针对 kernel 格式所写的链接脚本
  */
 
+PAGE_OFFSET = 0xC0000000;
+
 ENTRY(start)
 SECTIONS
 {
-    /* 段起始位置 */
+	/* 段起始位置 */
 
-    . = 0x100000;
-    
-    .text :
-    {
-        *(.text)
-        . = ALIGN(4096);
-    }
+	. = 0x100000;
 
-    .data :
-    {
-        *(.data)
-        *(.rodata)
-        . = ALIGN(4096);
-    }
+	.init :
+	{
+		*(.init)
+		. = ALIGN(4096);
+	}
 
-    .bss :
-    {
-        *(.bss)
-        . = ALIGN(4096);
-    }
+	. += PAGE_OFFSET;
 
-    .stab :
-    {
-        *(.stab)
-        . = ALIGN(4096);
-    }
-    
-    .stabstr :
-    {
-        *(.stabstr)
-        . = ALIGN(4096);
-    }
+	.text : AT( ADDR(.text) - PAGE_OFFSET )
+	{
+		*(.text)
+		. = ALIGN(4096);
+	}
 
-    /DISCARD/ : { *(.comment) *(.eh_frame) }
+	.rodata : AT ( ADDR(.rodata) - PAGE_OFFSET )
+	{
+		*(.rodata)
+		. = ALIGN(4096);
+	}
+
+	.data : AT ( ADDR(.data) - PAGE_OFFSET )
+	{
+		*(.data)
+		. = ALIGN(4096);
+	}
+
+	.bss : AT ( ADDR(.bss) - PAGE_OFFSET )
+	{
+		*(.bss)
+		. = ALIGN(4096);
+	}
+
+	.stab : AT( ADDR(.stab) - PAGE_OFFSET )
+	{
+		*(.stab)
+		. = ALIGN(4096);
+	}
+
+	.stabstr : AT( ADDR(.stabstr) - PAGE_OFFSET )
+	{
+		*(.stabstr)
+		. = ALIGN(4096);
+	}
+
+	_kern_end = .;
+
+	/DISCARD/ : { *(.comment) *(.eh_frame) }
 }

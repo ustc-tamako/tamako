@@ -19,20 +19,21 @@ LD_FLAGS = -T scripts/kernel.ld -m elf_i386 -nostdlib
 all: $(S_OBJECTS) $(C_OBJECTS) link
 
 .c.o:
-	@echo [  CC  ] $<
-	$(CC) $(C_FLAGS) $< -o $@
+	@echo "\033[1m\033[32m   CC   \033[0m \033[1m$<\033[0m"
+	@$(CC) $(C_FLAGS) $< -o $@
 
 .s.o:
-	@echo [  AS  ] $<
-	$(ASM) $(ASM_FLAGS) $<
+	@echo "\033[1m\033[32m   AS   \033[0m \033[1m$<\033[0m"
+	@$(ASM) $(ASM_FLAGS) $<
 
 link:
-	@echo [  LD  ] 
-	$(LD) $(LD_FLAGS) $(S_OBJECTS) $(C_OBJECTS) -o tamago
+	@echo "\033[1m\033[32m   LD   \033[0m \033[1m*.o => tamago\033[0m"
+	@$(LD) $(LD_FLAGS) $(S_OBJECTS) $(C_OBJECTS) -o tamago
 
 .PHONY:clean
 clean:
-	$(RM) $(S_OBJECTS) $(C_OBJECTS) tamago
+	@echo "\033[1m\033[32m   RM   \033[0m \033[1mall\033[0m"
+	@$(RM) $(S_OBJECTS) $(C_OBJECTS) tamago
 
 .PHONY:install
 install:
@@ -43,5 +44,5 @@ install:
 
 .PHONY:mac_install
 mac_install:
-	sudo cp tamago /Volumes/TAMAKO
-	
+	@cp tamago /Volumes/TAMAKO
+	@echo "\033[1m\033[32m        \033[0m \033[1mCopy Done\033[0m"
