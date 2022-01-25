@@ -7,7 +7,7 @@
 gdbstub: enabled=1,port=1234,text_base=0,data_base=0,bss_base=0
 
 # 内存
-megs: 128
+megs: 32
 
 # ROM 文件
 romimage: file="$BXSHARE/BIOS-bochs-latest"

@@ -77,6 +77,6 @@ void print_mm_map()
 
 void no_bug_please()
 {
-	printk("\n\n%52s\n", "\[0bTamako daisuki! Dozo!");
+	printk("\n\n%64s\n", "\033[01m\033[36mTamako daisuki! Dozo!\033[0m");
 	while(1);
 }

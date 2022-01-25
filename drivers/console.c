@@ -1,3 +1,4 @@
+#include "types.h"
 #include "common.h"
 #include "console.h"
 
@@ -8,14 +9,6 @@ static uint16_t * video_memory = (uint16_t *)0xC00B8000;
 
 static uint8_t cursor_x = 0;
 static uint8_t cursor_y = 0;
-
-#define xtoi(c) ({ \
-	int _i = 0; \
-	if ('0' <= c && c <= '9') _i = c - '0'; \
-	if ('a' <= c && c <= 'f') _i = c - 'a' + 10; \
-	if ('A' <= c && c <= 'F') _i = c - 'A' + 10; \
-	_i; \
-})
 
 static void move_cursor()
 {
@@ -69,7 +62,7 @@ void console_clear()
 	 move_cursor();
 }
 
-void console_putc_color(char c, real_color_t back, real_color_t fore)
+void cputc(char c, real_color_t back, real_color_t fore)
 {
 	uint8_t back_color = (uint8_t)back;
 	uint8_t fore_color = (uint8_t)fore;
@@ -105,16 +98,38 @@ void console_putc_color(char c, real_color_t back, real_color_t fore)
 	move_cursor();
 }
 
-void console_write(char * cstr)
+real_color_t scan_color(char ** cstr)
 {
-	real_color_t back = rc_black;
+	real_color_t white = rc_white;
+	int n = 0;
+	char * tmp = *cstr;
+	if (**cstr == '\0' || **cstr != '[') {
+		return white;
+	}
+	(*cstr)++;
+	while ('0' <= **cstr && **cstr <= '9') {
+		n = n * 10 + **cstr - '0';
+		(*cstr)++;
+	}
+	if (**cstr == '\0' || **cstr != 'm') {
+		*cstr = tmp;
+		return white;
+	}
+	(*cstr)++;
+	if (30 <= n && n <= 45) {
+		return n - 30;
+	}
+	return white;
+}
+
+void cputs(char * str)
+{
 	real_color_t fore = rc_white;
-	while (*cstr != '\0') {
-		if (*cstr == '\[' && *(cstr+1) != '\0' && *(cstr+2) != '\0') {
-			back = xtoi(*(cstr+1));
-			fore = xtoi(*(cstr+2));
-			cstr += 3;
+	while (*str != '\0') {
+		while (*str == '\033') {
+			str++;
+			fore = scan_color(&str);
 		}
-		console_putc_color(*cstr++, back, fore);
+		cputc(*str++, rc_black, fore);
 	}
 }

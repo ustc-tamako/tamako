@@ -6,9 +6,9 @@
 // 内存页(框)大小 4KB
 #define FRAME_SIZE      0x1000
 #define PAGE_SIZE       0x1000
-// 最大物理内存大小 128MB
-#define MAX_MM_SIZE     0x08000000
-// 最多支持的页框个数 32K
+// 最大物理内存大小 32MB
+#define MAX_MM_SIZE     0x02000000
+// 最多支持的页框个数 8K
 #define MAX_FRAME_NUM   (MAX_MM_SIZE / FRAME_SIZE)
 // 当页未分配页框时页表项的默认值
 #define PG_NULL         0xFFFFF000

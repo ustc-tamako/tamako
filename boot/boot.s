@@ -46,7 +46,7 @@ dd MBOOT_HEADER_MAGIC   ; GRUB 会通过这个魔数判断该映像是否支持
 dd MBOOT_HEADER_FLAGS   ; GRUB 的一些加载时选项，其详细注释在定义处
 dd MBOOT_CHECKSUM       ; 检测数值，其含义在定义处
 mboot_ptr:
-	dd 0                ; 暂时保存 GRUB 给出的 multiboot 指针，指向0x10000
+	dd 0                ; 暂时保存 GRUB 给出的 multiboot 指针
 
 [GLOBAL start]          ; 向外部声明内核代码入口，此处提供该声明给链接器
 [EXTERN stack_bottom]   ; 声明全局内核栈底指针
@@ -63,16 +63,16 @@ page_init:
 	mov [pg_dir], eax
 	mov [pg_dir + 0xC00], eax
 
-	mov ecx, 0
+	mov ecx, 0x400
 pg_tab_loop:
+	dec ecx
 	mov eax, ecx
 	mov edx, ecx
 	shl edx, 2
 	shl eax, 12
 	or eax, 0x3
 	mov [pg_tab_k + edx], eax
-	inc ecx
-	cmp ecx, 0x400
+	or ecx, ecx
 	jne pg_tab_loop
 
 pg_enable:

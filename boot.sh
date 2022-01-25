@@ -29,8 +29,8 @@ fi
 	
 if [ $debug -eq 1 ]
 then
-	qemu-system-i386 -m 128M -S -s -hda tamako.img
+	qemu-system-i386 -m 32M -S -s -hda tamako.img --nographic
 else
-	qemu-system-i386 -m 128M -hda tamako.img
+	qemu-system-i386 -m 32M -hda tamako.img --nographic
 fi
 exit 0

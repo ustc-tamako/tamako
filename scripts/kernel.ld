@@ -18,6 +18,7 @@ SECTIONS
 	}
 
 	. += PAGE_OFFSET;
+	_ro_start = .;
 
 	.text : AT( ADDR(.text) - PAGE_OFFSET )
 	{
@@ -30,6 +31,8 @@ SECTIONS
 		*(.rodata)
 		. = ALIGN(4096);
 	}
+
+	_ro_end = .;
 
 	.data : AT ( ADDR(.data) - PAGE_OFFSET )
 	{

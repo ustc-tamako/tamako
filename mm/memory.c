@@ -10,9 +10,9 @@
 #define row_to_idx(i)   ((i)<<5)
 // 空闲页框总数
 static uint32_t n_free_frames;
-// 管理页框分配的位图 4KB
+// 管理页框分配的位图 1KB
 uint32_t frame_map[idx_to_row(MAX_FRAME_NUM)];
-// 管理所有页框的表 160KB
+// 管理所有页框的表 40KB
 frame_t frame_tab[MAX_FRAME_NUM];
 // 计算空闲物理内存大小
 #define calc_free_mm()  (n_free_frames << 12)
@@ -26,13 +26,17 @@ frame_t frame_tab[MAX_FRAME_NUM];
 // 页是否分配页框
 #define pg_mapped(p)    ((p)&PG_PRESENT)
 
-// 内核保留区域的尾部地址，在链接脚本中定义
+// 内核只读部分的开始地址
+extern uint8_t _ro_start[];
+// 内核只读部分的结束地址
+extern uint8_t _ro_end[];
+// 内核保留区域的尾部地址
 extern uint8_t _kern_end[];
 
 // 页目录地址，位于物理地址的 0x0 处
-#define PG_DIR      to_vaddr(0x0)
-// 内核页表区域，位于物理地址的 0x1000 开始处，共 32KB
-#define PG_TAB_K   	to_vaddr(0x1000)
+#define PG_DIR		to_vaddr(0x0)
+// 内核页表区域，位于物理地址的 0x1000 开始处
+#define PG_TAB_K	to_vaddr(0x1000)
 
 inline static void set_frame(uint32_t idx)
 {
@@ -177,13 +181,21 @@ void mm_init()
 	n_free_frames = MAX_FRAME_NUM;
 
 	/* 
-	 * 内核页表存放在内存的固定区域 0x1000 开始的 32KB 空间
+	 * 内核页表存放在内存的固定区域 0x1000 开始的 8KB 空间
 	 * 由于此时还未修改页目录，仍然可以使用在启动代码中设置的前 1MB 线性地址空间
 	 */
 	page_t * pg_tab = (page_t *)PG_TAB_K;
 	uint32_t i;
 	// 内核已使用的页框置位
-	for (i = 0; i < pg_to_frame(to_paddr((uint32_t)_kern_end)); i++) {
+	for (i = 0; i < pg_to_frame(to_paddr((uint32_t)_ro_start)); i++) {
+		pg_tab[i] = (i << 12) | PG_PRESENT | PG_WRITE;
+		set_frame(i);
+	}
+	for (; i < pg_to_frame(to_paddr((uint32_t)_ro_end)); i++) {
+		pg_tab[i] = (i << 12) | PG_PRESENT;
+		set_frame(i);
+	}
+	for (; i < pg_to_frame(to_paddr((uint32_t)_kern_end)); i++) {
 		pg_tab[i] = (i << 12) | PG_PRESENT | PG_WRITE;
 		set_frame(i);
 	}
@@ -200,7 +212,7 @@ void mm_init()
 	for (i = 0; i < pgk_idx; i++) {
 		pg_tab[i] = PG_NULL;
 	}
-	// 0xC0000000 开始的 128MB
+	// 0xC0000000 开始的 32MB
 	for (int k = 0; k < MAX_FRAME_NUM>>10/* 32 */; k++, i++) {
 		pg_tab[i] = to_paddr(PG_TAB_K + (k<<12)) | PG_PRESENT | PG_WRITE;
 	}
