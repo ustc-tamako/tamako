@@ -33,26 +33,28 @@ extern uint8_t _ro_end[];
 // 内核保留区域的尾部地址
 extern uint8_t _kern_end[];
 
+extern multiboot_t * glb_mboot_ptr;
+
 // 页目录地址，位于物理地址的 0x0 处
 #define PG_DIR		to_vaddr(0x0)
 // 内核页表区域，位于物理地址的 0x1000 开始处
 #define PG_TAB_K	to_vaddr(0x1000)
 
-inline static void set_frame(uint32_t idx)
-{
-	if (frame_tab[idx].ref_cnt++ == 0) {
-		frame_map[idx_to_row(idx)] |= (0x1 << (idx & 0x1F));
-		n_free_frames--;
-	}
-}
+#define set_frame(idx) \
+	do { \
+		if (frame_tab[idx].ref_cnt++ == 0) { \
+			frame_map[idx_to_row(idx)] |= (0x1 << (idx & 0x1F)); \
+			n_free_frames--; \
+		} \
+	} while(0); \
 
-inline static void clear_frame(uint32_t idx)
-{
-	if (--frame_tab[idx].ref_cnt == 0) {
-		frame_map[idx_to_row(idx)] &= ~(0x1 << (idx & 0x1F));
-		n_free_frames++;
-	}
-}
+#define clear_frame(idx) \
+	do { \
+		if (--frame_tab[idx].ref_cnt == 0) { \
+			frame_map[idx_to_row(idx)] &= ~(0x1 << (idx & 0x1F)); \
+			n_free_frames++; \
+		} \
+	} while(0); \
 
 // 获取一个空闲页框，返回其页框号
 uint32_t get_free_frame()
@@ -138,37 +140,37 @@ void free_page(void * vaddr)
 void page_fault(pt_regs_t * regs)
 {
 	uint32_t cr2;
-    __asm__ __volatile__ ("mov %%cr2, %0" : "=r" (cr2));
+	__asm__ __volatile__ ("mov %%cr2, %0" : "=r" (cr2));
 
-    printk("Page fault at 0x%x, virtual faulting address 0x%x\n", regs->eip, cr2);
-    printk("Error code: %x\n", regs->err_code);
+	printk("Page fault at 0x%x, virtual faulting address 0x%x\n", regs->eip, cr2);
+	printk("Error code: %x\n", regs->err_code);
 
-    // bit 0 为 0 指页面不存在内存里
-    if (!(regs->err_code & 0x1)) {
-        printk("Page wasn't present.\n");
-    }
-    // bit 1 为 0 表示读错误，为 1 表示写错误
-    if (regs->err_code & 0x2) {
-        printk("Write error.\n");
-    } else {
-        printk("Read error.\n");
-    }
-    // bit 2 为 1 表示在用户模式打断的，为 0 是在内核模式打断的
-    if (regs->err_code & 0x4) {
-        printk("In user mode.\n");
-    } else {
-        printk("In kernel mode.\n");
-    }
-    // bit 3 为 1 表示错误是由保留位覆盖造成的
-    if (regs->err_code & 0x8) {
-        printk("Reserved bits being overwritten.\n");
-    }
-    // bit 4 为 1 表示错误发生在取指令的时候
-    if (regs->err_code & 0x10) {
-        printk("The fault occurred during an instruction fetch.\n");
-    }
+	// bit 0 为 0 指页面不存在内存里
+	if (!(regs->err_code & 0x1)) {
+		printk("Page wasn't present.\n");
+	}
+	// bit 1 为 0 表示读错误，为 1 表示写错误
+	if (regs->err_code & 0x2) {
+		printk("Write error.\n");
+	} else {
+		printk("Read error.\n");
+	}
+	// bit 2 为 1 表示在用户模式打断的，为 0 是在内核模式打断的
+	if (regs->err_code & 0x4) {
+		printk("In user mode.\n");
+	} else {
+		printk("In kernel mode.\n");
+	}
+	// bit 3 为 1 表示错误是由保留位覆盖造成的
+	if (regs->err_code & 0x8) {
+		printk("Reserved bits being overwritten.\n");
+	}
+	// bit 4 为 1 表示错误发生在取指令的时候
+	if (regs->err_code & 0x10) {
+		printk("The fault occurred during an instruction fetch.\n");
+	}
 
-    while (1);
+	while (1);
 }
 
 void mm_init()
@@ -202,6 +204,19 @@ void mm_init()
 	// 剩余部分只进行页表初始化
 	for (; i < MAX_FRAME_NUM; i++) {
 		pg_tab[i] = PG_NULL;
+	}
+
+	// 对由 GRUB 加载入内存的模块部分页表进行初始化
+	int mods_cnt = glb_mboot_ptr->mods_count;
+	while (mods_cnt--) {
+		uint32_t mods_start = *((uint32_t *)glb_mboot_ptr->mods_addr);
+		uint32_t mods_end = *(uint32_t *)(glb_mboot_ptr->mods_addr+4);
+		while (mods_start < mods_end) {
+			i = pg_to_frame(mods_start);
+			pg_tab[i] = (i << 12) | PG_PRESENT;
+			set_frame(i);
+			mods_start += 0x1000;
+		}
 	}
 
 	// 设置页目录表

@@ -5,6 +5,7 @@
 #include "idt.h"
 #include "gdt.h"
 #include "mm.h"
+#include "fs.h"
 #include "common.h"
 
 uint32_t kern_stack[PAGE_SIZE<<2];
@@ -23,12 +24,14 @@ int kern_entry()
 	clk_init();
 
 	mm_init();
+	fat_init();
 
 	sti();
 
 	char * s = (char *)kmalloc(sizeof(char)*128);
 	ugets(s);
 	uputs(s);
+	kfree(s);
 
 	no_bug_please();
 

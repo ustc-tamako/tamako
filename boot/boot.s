@@ -35,8 +35,8 @@ MBOOT_CHECKSUM      equ     -(MBOOT_HEADER_MAGIC+MBOOT_HEADER_FLAGS)
 
 ;-----------------------------------------------------------------------------
 
-pg_dir      equ     0x0         ; 页目录表
-pg_tab_k   equ     0x1000      ; 虚拟地址 0xC0000000 处对应的页表
+pg_dir		equ		0x0         ; 页目录表
+pg_tab_k	equ		0x1000      ; 虚拟地址 0xC0000000 处对应的页表
 
 [BITS 32]       ; 所有代码以 32-bit 的方式编译
 
@@ -86,6 +86,7 @@ c_entry:
 	mov ebp, 0 
 	mov esp, [stack_bottom]	; 设置内核栈
 	mov eax, [mboot_ptr]
+	add eax, 0xC0000000
 	mov [glb_mboot_ptr], eax
 	call kern_entry         ; 调用内核入口函数
 

@@ -2,3 +2,4 @@ logs/*
 *.o
 .vscode
 .DS_Store
+objdump

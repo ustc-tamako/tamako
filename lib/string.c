@@ -12,6 +12,8 @@ inline void memcpy(void * dest, const void * src, size_t len)
 			*dest_w++ = *src_w++;
 			len -= sizeof(unsigned long);
 		}
+		dest_b = (char *)dest_w;
+		src_b = (char *)src_w;
 	}
 
 	while (len-- != 0) {
