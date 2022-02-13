@@ -4,17 +4,17 @@
 
 typedef
 struct bucket_desc {
-	uint32_t *				page;		// 存放对象的页
-	struct bucket_desc * 	next; 		// 循环链表
-	uint32_t *				free_ptr;	// 指向第一个空闲对象
-	uint16_t				ref_cnt;	// 该桶中已被分配的对象数
-	uint16_t				obj_size;	// 桶中对象的大小
+	uint32_t           * page;      // 存放对象的页
+	struct bucket_desc * next;      // 循环链表
+	uint32_t           * free_ptr;	// 指向第一个空闲对象
+	uint16_t             ref_cnt;	// 该桶中已被分配的对象数
+	uint16_t             obj_size;	// 桶中对象的大小
 } bucket_desc; // 16B
 
 typedef
 struct _bucket_desc {
-	size_t			size;
-	bucket_desc *	chain;
+	size_t        size;
+	bucket_desc * chain;
 } _bucket_desc; // 8B
 
 // 桶目录
@@ -34,11 +34,11 @@ _bucket_desc bucket_dir[] = {
 // 空闲桶描述符链表头
 bucket_desc * free_bucket_desc = (bucket_desc *)NULL;
 
-typedef 
+typedef
 struct cache_desc {
-	uint16_t	obj_size;
-	uint16_t	list_len;
-	uint32_t *	object;
+	uint16_t   obj_size;
+	uint16_t   list_len;
+	uint32_t * object;
 } cache_desc; // 8B
 
 // 对象缓存目录
@@ -59,7 +59,7 @@ cache_desc cache_dir[] = {
 // 缓存大小上限，当某个对象缓存的大小达到阀值后，释放链表中 3/4 的对象
 #define CACHE_THRESHOLD	0x10000 //  64KB
 
-/* 
+/*
  * 用于对象缓存链表中查找前驱和后继节点的宏
  * 每个空闲对象用其头部的 8B 空间保存两个指针
  */

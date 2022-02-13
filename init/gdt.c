@@ -1,6 +1,6 @@
 #include "gdt.h"
 
-#define GDT_LENGTH 5
+#define GDT_LENGTH  5
 
 #define GDT_NULL    0
 #define GDT_KTEXT   1
