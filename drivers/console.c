@@ -43,11 +43,6 @@ static void scroll()
 	}
 }
 
-void console_init()
-{
-	console_clear();
-}
-
 void console_clear()
 {
 	uint8_t attribute_byte = (0 /*black*/ << 4) | (15 /*white*/ & 0x0F);

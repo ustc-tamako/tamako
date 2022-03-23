@@ -21,7 +21,7 @@ enum real_color {
 	rc_white = 15
 } real_color_t;
 
-void console_init();
+#define console_init() console_clear()
 
 // 清屏操作
 void console_clear();

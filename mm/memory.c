@@ -228,7 +228,7 @@ void mm_init()
 		pg_tab[i] = PG_NULL;
 	}
 	// 0xC0000000 开始的 32MB
-	for (int k = 0; k < MAX_FRAME_NUM>>10/* 32 */; k++, i++) {
+	for (int k = 0; k < MAX_FRAME_NUM>>10/* 8 */; k++, i++) {
 		pg_tab[i] = to_paddr(PG_TAB_K + (k<<12)) | PG_PRESENT | PG_WRITE;
 	}
 	// 剩余未进行映射的空间

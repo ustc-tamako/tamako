@@ -106,13 +106,19 @@ void uart_init()
 	uart.ohead = 0;
 	uart.otail = 0;
 
+	// 清零
 	outb(uart.base+1, 0x00);
+	// DLAB = 1
 	outb(uart.base+3, 0x80);
-	outb(uart.base, 0x07);
+	// 设置波特率 2400bps
+	outb(uart.base, 0x30);
 	outb(uart.base+1, 0x00);
 
+	// DLAB = 0, 设置数据位长度
 	outb(uart.base+3, 0x03);
+	// 中断使能
 	outb(uart.base+1, 0x06);
+	// 当前无中断
 	outb(uart.base+2, 0x01);
 	
 	register_intr_handler(36, uart_intr);

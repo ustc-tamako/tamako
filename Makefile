@@ -5,8 +5,8 @@ C_OBJECTS = $(patsubst %.c, %.o, $(C_SOURCES))
 S_SOURCES = $(shell find . -name "*.s")
 S_OBJECTS = $(patsubst %.s, %.o, $(S_SOURCES))
 
-ARCH			?= x86_64
-CROSS_COMPILE	?=
+ARCH          ?= x86_64
+CROSS_COMPILE ?=
 
 CC = $(CROSS_COMPILE)gcc
 LD = $(CROSS_COMPILE)ld
