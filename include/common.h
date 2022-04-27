@@ -17,14 +17,23 @@ static inline uint8_t inb(uint16_t port)
     return ret;
 }
 
+// 关中断
 static inline void cli()
 {
     __asm__ __volatile__ ("cli");
 }
 
+// 开中断
 static inline void sti()
 {
     __asm__ __volatile__ ("sti");
 }
+
+#define offset_of(type, member)     ((size_t)&((type *)0)->member)
+
+#define container_of(ptr, type, member) ({ \
+    const typeof( ((type *)0)->member ) * __mptr = (ptr); \
+    (type *)( (char *)__mptr - offset_of(type, member) ); \
+})
 
 #endif  // INCLUDE_COMMON_H_

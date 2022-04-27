@@ -46,7 +46,7 @@ extern multiboot_t * glb_mboot_ptr;
 			frame_map[idx_to_row(idx)] |= (0x1 << (idx & 0x1F)); \
 			n_free_frames--; \
 		} \
-	} while(0); \
+	} while (0); \
 
 #define clear_frame(idx) \
 	do { \
@@ -54,7 +54,7 @@ extern multiboot_t * glb_mboot_ptr;
 			frame_map[idx_to_row(idx)] &= ~(0x1 << (idx & 0x1F)); \
 			n_free_frames++; \
 		} \
-	} while(0); \
+	} while (0); \
 
 // 获取一个空闲页框，返回其页框号
 uint32_t get_free_frame()
