@@ -59,7 +59,12 @@ void ugets(char * str)
 	outb(uart.base+1, inb(uart.base+1)|0x01);
 	char * p = str;
 	while ((*p = ugetc()) != '\r') {
-		p++;
+		if (p > str && *p == '\177') {
+			p--;
+		}
+		else {
+			p++;
+		}
 	}
 	*p = '\0';
 	outb(uart.base+1, inb(uart.base+1)&0xFE);
@@ -90,7 +95,19 @@ void uart_intr(pt_regs_t * regs)
 		uart.ibuf[uart.itail++] = c;
 		uart.itail %= BUF_SIZE;
 		uart.ilen++;
-		uputc(c == '\r' ? '\n' : c);
+		switch (c) {
+		case '\r':
+			uputc('\n');
+			break;
+		case '\177':
+			uputc('\b');
+			uputc(' ');
+			uputc('\b');
+			break;
+		default:
+			uputc(c);
+			break;
+		}
 	}
 }
 
