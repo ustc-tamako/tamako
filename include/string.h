@@ -8,7 +8,7 @@ static inline void memcpy(void * dest, const void * src, size_t len)
 	char * dest_b = (char *)dest;
 	char * src_b = (char *)src;
 
-	if ( (((uint32_t)dest_b | (uint32_t)src_b) & 0x03) == 0) {
+	if ( (((uint32_t)dest_b | (uint32_t)src_b) & 0x03) == 0 ) {
 		uint32_t * dest_w = (uint32_t *)dest_b;
 		uint32_t * src_w = (uint32_t *)src_b;
 		while (len >= sizeof(uint32_t)) {

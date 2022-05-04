@@ -34,3 +34,5 @@ else
 	qemu-system-i386 -m 32M -hda tamako.img --nographic
 fi
 exit 0
+
+# cgdb -d x86_64-elf-gdb -ex "target remote :1234" tamago

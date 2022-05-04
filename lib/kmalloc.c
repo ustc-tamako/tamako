@@ -4,33 +4,36 @@
 
 typedef
 struct bucket_desc {
-	uint32_t           * page;      // 存放对象的页
+	void               * page;      // 存放对象的页
 	struct bucket_desc * next;      // 循环链表
-	uint32_t           * free_ptr;	// 指向第一个空闲对象
+	void               * free_ptr;	// 指向第一个空闲对象
 	uint16_t             ref_cnt;	// 该桶中已被分配的对象数
 	uint16_t             obj_size;	// 桶中对象的大小
 } bucket_desc; // 16B
 
 typedef
 struct _bucket_desc {
-	size_t        size;
+	uint16_t      obj_size;
+	uint16_t      list_len;
 	bucket_desc * chain;
 } _bucket_desc; // 8B
 
 // 桶目录
 _bucket_desc bucket_dir[] = {
-	{8,     (bucket_desc *)NULL}, // 8B
-	{16,    (bucket_desc *)NULL}, // 16B
-	{32,    (bucket_desc *)NULL}, // 32B
-	{64,    (bucket_desc *)NULL}, // 64B
-	{128,   (bucket_desc *)NULL}, // 128B
-	{256,   (bucket_desc *)NULL}, // 256B
-	{512,   (bucket_desc *)NULL}, // 512B
-	{1024,  (bucket_desc *)NULL}, // 1024B
-	{2048,  (bucket_desc *)NULL}, // 2048B
-	{4096,  (bucket_desc *)NULL}, // 4096B
-	{(size_t)-1,(bucket_desc *)NULL}
+	{8,		0,	(bucket_desc *)NULL}, // 8B
+	{16,	0,	(bucket_desc *)NULL}, // 16B
+	{32,	0,	(bucket_desc *)NULL}, // 32B
+	{64,	0,	(bucket_desc *)NULL}, // 64B
+	{128,	0,	(bucket_desc *)NULL}, // 128B
+	{256,	0,	(bucket_desc *)NULL}, // 256B
+	{512,	0,	(bucket_desc *)NULL}, // 512B
+	{1024,	0,	(bucket_desc *)NULL}, // 1024B
+	{2048,	0,	(bucket_desc *)NULL}, // 2048B
+	{4096,	0,	(bucket_desc *)NULL}, // 4096B
+	{(uint16_t)-1,	0,	(bucket_desc *)NULL}
 };
+
+list_node free_bucket_frames_head = list_empty_head(free_bucket_frames_head);
 // 空闲桶描述符链表头
 bucket_desc * free_bucket_desc = (bucket_desc *)NULL;
 
@@ -43,20 +46,20 @@ struct cache_desc {
 
 // 对象缓存目录
 cache_desc cache_dir[] = {
-	{8,     0, (uint32_t *)NULL}, // 8B
-	{16,    0, (uint32_t *)NULL}, // 16B
-	{32,    0, (uint32_t *)NULL}, // 32B
-	{64,    0, (uint32_t *)NULL}, // 64B
-	{128,   0, (uint32_t *)NULL}, // 128B
-	{256,   0, (uint32_t *)NULL}, // 256B
-	{512,   0, (uint32_t *)NULL}, // 512B
-	{1024,  0, (uint32_t *)NULL}, // 1024B
-	{2048,  0, (uint32_t *)NULL}, // 2048B
-	{4096,  0, (uint32_t *)NULL}, // 4096B
-	{(uint16_t)-1, 0, (uint32_t *)NULL}
+	{8,		0,	(uint32_t *)NULL}, // 8B
+	{16,	0,	(uint32_t *)NULL}, // 16B
+	{32,	0,	(uint32_t *)NULL}, // 32B
+	{64,	0,	(uint32_t *)NULL}, // 64B
+	{128,	0,	(uint32_t *)NULL}, // 128B
+	{256,	0,	(uint32_t *)NULL}, // 256B
+	{512,	0,	(uint32_t *)NULL}, // 512B
+	{1024,	0,	(uint32_t *)NULL}, // 1024B
+	{2048,	0,	(uint32_t *)NULL}, // 2048B
+	{4096,	0,	(uint32_t *)NULL}, // 4096B
+	{(uint16_t)-1,	0,	(uint32_t *)NULL}
 };
 
-// 缓存大小上限，当某个对象缓存的大小达到阀值后，释放链表中 3/4 的对象
+// 缓存大小上限, 当某个对象缓存的大小达到阀值后, 释放链表中 3/4 的对象
 #define CACHE_THRESHOLD	0x10000 //  64KB
 
 /*
@@ -66,12 +69,11 @@ cache_desc cache_dir[] = {
 #define prev(c) (*(c))
 #define next(c) (*((c)+1))
 
-extern frame_t frame_tab[MAX_FRAME_NUM];
-
 void bucket_init()
 {
-	// 申请一个页框，用来存放空的桶描述符
+	// 申请一个页框, 用来存放空的桶描述符
 	bucket_desc * bkt_desc = (bucket_desc *)alloc_page();
+	list_add_tail(&to_fr(to_paddr(bkt_desc))->chain, &free_bucket_frames_head);
 	if (bkt_desc == NULL) {
 		panic("Memory Error: Heap init failed, no more page for bucket description.");
 	}
@@ -91,7 +93,7 @@ void * kmalloc(size_t len)
 	uint32_t * ret;
 	int i = 0;
 	_bucket_desc * bkt_dir = bucket_dir;
-	while (bkt_dir[i].size < len) {
+	while (bkt_dir[i].obj_size < len) {
 		i++;
 	}
 	cache_desc * ch_desc = cache_dir + i;
@@ -103,7 +105,7 @@ void * kmalloc(size_t len)
 			ch_desc->object = NULL;
 		}
 		else {
-			// 将 ret 从双链表中取出，重新连接链表
+			// 将 ret 从双链表中取出, 重新连接链表
 			next((uint32_t *)prev(ret)) = next(ret);
 			prev((uint32_t *)next(ret)) = prev(ret);
 			ch_desc->object = (uint32_t *)next(ret);
@@ -114,9 +116,9 @@ void * kmalloc(size_t len)
 		return (void *)ret;
 	}
 
-	// 对象缓存中未找到，则在对象存储桶中查找
+	// 对象缓存中未找到, 则在对象存储桶中查找
 	bkt_dir = bucket_dir + i;
-	if (bkt_dir->size == (size_t)-1) {
+	if (bkt_dir->obj_size == (uint16_t)-1) {
 		panic("Memory Error: Try to alloc block larger than 4KB.");
 	}
 	bucket_desc * bkt_desc = bkt_dir->chain;
@@ -126,9 +128,9 @@ void * kmalloc(size_t len)
 			bkt_desc = bkt_desc->next;
 		}
 	}
-	// 没有找到空闲的描述符，就从空闲桶描述符链表中取一个
+	// 没有找到空闲的描述符, 就从空闲桶描述符链表中取一个
 	if (bkt_desc == NULL || bkt_desc->free_ptr == NULL) {
-		// 空闲桶描述符链表为空，则调用初始化函数
+		// 空闲桶描述符链表为空, 则调用初始化函数
 		if (free_bucket_desc == NULL) {
 			bucket_init();
 		}
@@ -138,39 +140,40 @@ void * kmalloc(size_t len)
 		free_bucket_desc = free_bucket_desc->next;
 		bucket_desc * bkt_next = bkt_dir->chain;
 		if (bkt_next != NULL) {
-			// 头节点不为空，则将头节点的数据拷贝到新节点中，再将新节点插入头节点后
+			// 头节点不为空, 则将头节点的数据拷贝到新节点中, 再将新节点插入头节点后
 			*bkt_desc = *bkt_next;
 			bkt_next->next = bkt_desc;
 			// 更新页框管理表
-			fr_idx = pg_to_frame(to_paddr((uint32_t)bkt_next->page));
-			frame_tab[fr_idx].bkt_desc = (uint32_t *)bkt_desc;
+			fr_idx = to_fr_idx(to_paddr(bkt_next->page));
+			frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
 			bkt_desc = bkt_next;
 		}
 		else {
-			// 头节点为空，则设置循环指针，将 chain 指向新节点
+			// 头节点为空, 则设置循环指针, 将 chain 指向新节点
 			bkt_desc->next = bkt_desc;
 			bkt_dir->chain = bkt_desc;
 		}
+		bkt_dir->list_len++;
 		// 给桶描述符分配一个页框
-		bkt_desc->page = (uint32_t *)alloc_page();
+		bkt_desc->page = alloc_page();
 		bkt_desc->free_ptr = bkt_desc->page;
 		bkt_desc->ref_cnt = 0;
-		bkt_desc->obj_size = bkt_dir->size;
-		// 设置页框表的对应项，标识该页框对应的桶描述符
-		fr_idx = pg_to_frame(to_paddr((uint32_t)bkt_desc->page));
-		frame_tab[fr_idx].bkt_desc = (uint32_t *)bkt_desc;
+		bkt_desc->obj_size = bkt_dir->obj_size;
+		// 设置页框表的对应项, 标识该页框对应的桶描述符
+		fr_idx = to_fr_idx(to_paddr(bkt_desc->page));
+		frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
 		// 对分配到的页框进行初始化
 		uint32_t * obj_p = bkt_desc->page;
-		for (int i = 0; i < PAGE_SIZE/bkt_dir->size - 1; i++) {
-			*obj_p = (uint32_t)(obj_p + (bkt_dir->size >> 2));
-			obj_p += (bkt_dir->size >> 2);
+		for (int i = 0; i < PAGE_SIZE/bkt_dir->obj_size - 1; i++) {
+			*obj_p = (uint32_t)(obj_p + (bkt_dir->obj_size >> 2));
+			obj_p += (bkt_dir->obj_size >> 2);
 		}
 		// 最后一个对象的指针赋为空
 		*obj_p = NULL;
 	}
-	// 从存储桶中获取第一个空闲对象，并修改桶的空闲对象链表和引用计数
+	// 从存储桶中获取第一个空闲对象, 并修改桶的空闲对象链表和引用计数
 	ret = bkt_desc->free_ptr;
-	bkt_desc->free_ptr = (uint32_t *)*ret;
+	bkt_desc->free_ptr = (void *)*ret;
 	bkt_desc->ref_cnt++;
 	// 将空闲对象的指针清零返回
 	*ret = 0;
@@ -179,9 +182,9 @@ void * kmalloc(size_t len)
 
 void kfree(void * vaddr)
 {
-	// 根据虚拟地址找到页框号，查找页框管理表中对应项，得到 bucket 对象大小
+	// 根据虚拟地址找到页框号, 查找页框管理表中对应项, 得到 bucket 对象大小
 	uint32_t * va = (uint32_t *)vaddr;
-	uint32_t fr_idx = pg_to_frame(to_paddr((uint32_t)va));
+	uint32_t fr_idx = to_fr_idx(to_paddr(va));
 	bucket_desc * bkt_desc = (bucket_desc *)frame_tab[fr_idx].bkt_desc;
 	size_t size = bkt_desc->obj_size;
 	// 找到该对象大小相应的缓存描述符
@@ -211,41 +214,42 @@ void kfree(void * vaddr)
 	ch_desc->object = va;
 	ch_desc->list_len++;
 
-	// 当缓存对象链表的总大小超过阀值时，释放 3/4 的对象放回存储桶中
+	// 当缓存对象链表的总大小超过阀值时, 释放 3/4 的对象放回存储桶中
 	if (ch_desc->list_len * ch_desc->obj_size >= CACHE_THRESHOLD) {
 		bucket_desc * bkt_desc;
 		while (ch_desc->list_len * ch_desc->obj_size > CACHE_THRESHOLD>>2) {
-			// 从缓存对象链表中删除尾部节点，即优先回收最早被释放的对象
+			// 从缓存对象链表中删除尾部节点, 即优先回收最早被释放的对象
 			obj = (uint32_t *)prev(ch_desc->object);
 			next((uint32_t *)prev(obj)) = (uint32_t)ch_desc->object;
 			prev(ch_desc->object) = (uint32_t)prev(obj);
 			ch_desc->list_len--;
 			// 根据对象所在的页找到相应的桶描述符
-			fr_idx = pg_to_frame(to_paddr((uint32_t)obj));
+			fr_idx = to_fr_idx(to_paddr(obj));
 			bkt_desc = (bucket_desc *)frame_tab[fr_idx].bkt_desc;
 			// 将 obj 插入到空闲对象链表的头部
 			*obj = (uint32_t)bkt_desc->free_ptr;
-			bkt_desc->free_ptr = (uint32_t *)*obj;
+			bkt_desc->free_ptr = (void *)*obj;
 			bkt_desc->ref_cnt--;
-			// 当前页面为空，将其释放
+			// 当前页面为空, 将其释放
 			if (bkt_desc->ref_cnt == 0) {
 				free_page(bkt_desc->page);
 				_bucket_desc * bkt_dir = bucket_dir + i;
 				if (bkt_desc->next != bkt_desc) {
-					// 链表节点数大于 1，则将下一个节点的内容拷贝到当前节点，并释放下一个节点
+					// 链表节点数大于 1, 则将下一个节点的内容拷贝到当前节点, 并释放下一个节点
 					bucket_desc * bkt_next = bkt_desc->next;
 					*bkt_desc = *bkt_next;
 					if (bkt_dir->chain == bkt_next) {
 						bkt_dir->chain = bkt_desc;
 					}
 					// 更新页框管理表
-					fr_idx = pg_to_frame(to_paddr((uint32_t)bkt_next->page));
-					frame_tab[fr_idx].bkt_desc = (uint32_t *)bkt_desc;
+					fr_idx = to_fr_idx(to_paddr(bkt_next->page));
+					frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
 					bkt_desc = bkt_next;
 				}
 				else {
 					bkt_dir->chain = NULL;
 				}
+				bkt_dir->list_len--;
 				bkt_desc->next = free_bucket_desc;
 				free_bucket_desc = bkt_desc;
 			}
@@ -255,28 +259,80 @@ void kfree(void * vaddr)
 
 void km_print()
 {
+	info_log("Kmalloc", "");
 	int i = 0;
-	int len;
-	_bucket_desc * bkt_dir = bucket_dir;
-	bucket_desc * bkt_desc;
-	while (bkt_dir[i].size < (size_t)-1) {
-		bkt_desc = bkt_dir[i].chain;
-		len = 0;
-		if (bkt_desc != NULL) {
-			len++;
-			while (bkt_desc->next != bkt_dir[i].chain) {
-				len++;
-				bkt_desc = bkt_desc->next;
-			}
-		}
-		printk("Bucket %d: %d\n", bkt_dir[i++].size, len);
-	}
-
-	bkt_desc = free_bucket_desc;
-	len = 0;
+	bucket_desc * bkt_desc = free_bucket_desc;
+	int len = 0;
 	while (bkt_desc != NULL) {
 		len++;
 		bkt_desc = bkt_desc->next;
 	}
-	printk("Free bucket: %d\n", len);
+	printk("\033[31mFree_bucket:%4d\033[0m\n", len);
+	frame_t * fr = NULL;
+	list_for_each_entry(fr, &free_bucket_frames_head, chain) {
+		fr_print(fr);
+		printk("\n");
+	}
+	while (bucket_dir[i].obj_size < (uint16_t)-1) {
+		bkt_desc = bucket_dir[i].chain;
+		if (bkt_desc != NULL) {
+			printk("\033[31mSize:%4d\tCache_length:%3d\tBucket_length:%3d\033[0m\n", bucket_dir[i].obj_size, cache_dir[i].list_len, bucket_dir[i].list_len);
+			do {
+				fr_print(to_fr(to_paddr(bkt_desc->page)));
+				printk("N_%03d|\n", bkt_desc->ref_cnt);
+				bkt_desc = bkt_desc->next;
+			} while (bkt_desc != bucket_dir[i].chain);
+		}
+		i++;
+	}
+}
+
+void km_main()
+{
+	typedef
+ 	struct km_test_t {
+ 		uint32_t a, b, c, d, e;
+ 		uint32_t t[100];
+ 	} km_test_t;
+
+	int * a = (int *)kmalloc(sizeof(int));
+ 	int * b = (int *)kmalloc(sizeof(int));
+ 	int * c = (int *)kmalloc(sizeof(int));
+	km_print();
+ 	kfree(a);
+ 	kfree(b);
+ 	kfree(c);
+
+ 	km_print();
+	km_test_t * test_arr[64];
+	for (int i = 0; i < 64; i++) {
+ 		test_arr[i] = (km_test_t *)kmalloc(sizeof(km_test_t));
+ 	}
+ 	for (int i = 0; i < 32; i++) {
+ 		kfree(test_arr[i]);
+ 	}
+ 	test_arr[33]->c = 19;
+ 	for (int i = 0; i < 32; i++) {
+ 		test_arr[i] = (km_test_t *)kmalloc(sizeof(km_test_t));
+ 	}
+ 	for (int i = 0; i < 16; i++) {
+ 		kfree(test_arr[i]);
+ 	}
+ 	for (int i = 0; i < 8; i++) {
+ 		test_arr[i] = (km_test_t *)kmalloc(sizeof(km_test_t));
+ 	}
+ 	test_arr[5]->b = 3;
+ 	for (int i = 32; i < 64; i++) {
+ 		kfree(test_arr[i]);
+ 	}
+ 	int * d = (int *)kmalloc(sizeof(int) * 111);
+ 	kfree(d);
+ 	for (int i = 0; i < 8; i++) {
+ 		kfree(test_arr[i]);
+ 	}
+ 	// km_print();
+ 	for (int i = 16; i < 32; i++) {
+ 		kfree(test_arr[i]);
+ 	}
+ 	km_print();
 }

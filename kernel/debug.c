@@ -24,59 +24,33 @@ void panic(const char * msg)
 		: "=r"(ebp)
 	);
 
-	printk("===============================================================================\n");
-	printk("Kernel Panic\n");
-	printk("%s\n", msg);
+	error_log("Kernel Panic", msg);
 
 	while (ebp != 0) {
 		eip = ebp + 1;
-		printk("[0x%08x] %s\n", *eip, elf_lookup_symbol(*eip, &kernel_elf)); // 根据代码地址查找符号表，找到所属的函数名
+		printk("[0x%08x] %s\n", *eip, elf_lookup_symbol(*eip, &kernel_elf)); // 根据代码地址查找符号表, 找到所属的函数名
 		ebp = (uint32_t *) *ebp; // 当前函数的 ebp 里存放了上一个函数的 ebp
 	}
-
-	printk("===============================================================================\n");
-
+	
 	while(1);
 }
 
-void print_sreg()
+void info_log(const char * type, const char * msg)
 {
-	static int round = 0;
-	uint16_t cs, ds, es, ss;
-
-	__asm__ __volatile__ (
-		"mov %%cs, %0\n"
-		"mov %%ds, %1\n"
-		"mov %%es, %2\n"
-		"mov %%ss, %3\n"
-		: "=m"(cs), "=m"(ds), "=m"(es), "=m"(ss)
-	);
-
-	printk("%d:  cs = 0x%04x\n", round, cs);
-	printk("%d:  ds = 0x%04x\n", round, ds);
-	printk("%d:  es = 0x%04x\n", round, es);
-	printk("%d:  ss = 0x%04x\n", round, ss);
-
-	++round;
+	printk("\033[01m[%s Info]\033[0m  %s\n", type, msg);
 }
 
-void print_mm_map()
+void warning_log(const char * type, const char * msg)
 {
-	mmap_entry_t * mmap_start_addr = (mmap_entry_t *)glb_mboot_ptr->mmap_addr;
-	mmap_entry_t * mmap_end_addr = (mmap_entry_t *)(glb_mboot_ptr->mmap_addr + glb_mboot_ptr->mmap_length);
-	
-	printk("Memory Map:\n");
+	printk("\033[01m\033[34m[%s Warning]\033[0m  %s\n", type, msg);
+}
 
-	for (mmap_entry_t * mmap = mmap_start_addr; mmap < mmap_end_addr; mmap++) {
-		printk("Base_addr = 0x%X%08X, Length = 0x%X%08X, Type = 0x%X\n",
-		mmap->base_addr_high, mmap->base_addr_low,
-		mmap->length_high, mmap->length_low,
-		mmap->type);
-	}
+void error_log(const char * type, const char * msg)
+{
+	printk("\033[01m\033[31m[%s Error]\033[0m  %s\n", type, msg);
 }
 
 void no_bug_please()
 {
 	printk("\n\n%64s\n", "\033[01m\033[36mTamako daisuki! Dozo!\033[0m");
-	while(1);
 }

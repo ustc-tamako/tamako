@@ -4,14 +4,13 @@
 // 初始化Debug 信息
 void debug_init();
 
-// 打印当前函数调用栈信息
 void panic(const char * msg);
 
-// 打印当前的段寄存器值
-void print_sreg();
+void info_log(const char * type, const char * msg);
 
-// 打印物理内存段
-void print_mm_map();
+void warning_log(const char * type, const char * msg);
+
+void error_log(const char * type, const char * msg);
 
 void no_bug_please();
 

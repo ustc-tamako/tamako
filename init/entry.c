@@ -8,8 +8,11 @@
 #include "fs.h"
 #include "common.h"
 
-uint32_t kern_stack[PAGE_SIZE<<2];
-uint32_t * stack_bottom = &kern_stack[PAGE_SIZE<<2];
+uint32_t kern_stack[PAGE_SIZE<<1];
+uint32_t * stack_bottom = &kern_stack[PAGE_SIZE<<1];
+
+extern void buddy_main();
+extern void km_main();
 
 int kern_entry()
 {
@@ -17,16 +20,14 @@ int kern_entry()
 	setup_idt();
 
 	debug_init();
-
-	console_init();
 	uart_init();
-
 	clk_init();
-
 	mm_init();
-	fat_init();
 
 	sti();
+
+	km_main();
+	buddy_main();
 
 	char * s = (char *)kmalloc(sizeof(char)*128);
 	ugets(s);
@@ -34,6 +35,8 @@ int kern_entry()
 	kfree(s);
 
 	no_bug_please();
+
+	while (1);
 
 	return 0;
 }

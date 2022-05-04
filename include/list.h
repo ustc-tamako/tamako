@@ -34,6 +34,7 @@ static inline void __list_del(list_node * prev, list_node * next)
 #define list_add_tail(nd, pos)	__list_add(nd, (pos)->prev, pos)
 #define list_del(nd)			__list_del((nd)->prev, (nd)->next)
 
+#define list_empty_head(nd)		{&(nd), &(nd)}
 #define list_is_empty(nd)		((nd) == (nd)->next)
 #define list_first(head)		((head)->next)
 #define list_last(head)			((head)->prev)
