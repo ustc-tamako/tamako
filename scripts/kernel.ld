@@ -5,11 +5,14 @@
 PAGE_OFFSET = 0xC0000000;
 
 ENTRY(start)
+
 SECTIONS
 {
 	/* 段起始位置 */
 
 	. = 0x100000;
+
+	_kern_start = . ;
 
 	.init :
 	{
@@ -17,48 +20,48 @@ SECTIONS
 		. = ALIGN(4096);
 	}
 
-	. += PAGE_OFFSET;
-	_ro_start = .;
+	/* . += PAGE_OFFSET; */
+	_ro_start = . ;
 
-	.text : AT( ADDR(.text) - PAGE_OFFSET )
+	.text :
 	{
 		*(.text)
 		. = ALIGN(4096);
 	}
 
-	.rodata : AT ( ADDR(.rodata) - PAGE_OFFSET )
+	.rodata :
 	{
 		*(.rodata)
 		. = ALIGN(4096);
 	}
 
-	_ro_end = .;
+	_ro_end = . ;
 
-	.data : AT ( ADDR(.data) - PAGE_OFFSET )
+	.data :
 	{
 		*(.data)
 		. = ALIGN(4096);
 	}
 
-	.bss : AT ( ADDR(.bss) - PAGE_OFFSET )
+	.bss :
 	{
 		*(.bss)
 		. = ALIGN(4096);
 	}
 
-	.stab : AT( ADDR(.stab) - PAGE_OFFSET )
+	.stab :
 	{
 		*(.stab)
 		. = ALIGN(4096);
 	}
 
-	.stabstr : AT( ADDR(.stabstr) - PAGE_OFFSET )
+	.stabstr :
 	{
 		*(.stabstr)
 		. = ALIGN(4096);
 	}
 
-	_kern_end = .;
+	_kern_end = . ;
 
 	/DISCARD/ : { *(.comment) *(.eh_frame) }
 }

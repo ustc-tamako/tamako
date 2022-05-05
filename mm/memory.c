@@ -13,6 +13,8 @@ frame_t frame_tab[MAX_FRAME_NUM];
 // 内核页表区域, 位于物理地址的 0x1000 开始处
 #define PG_TAB_K	to_vaddr(0x1000)
 
+// 内核静态区域的开始地址
+extern uint8_t _kern_start[];
 // 内核静态区域的结束地址
 extern uint8_t _kern_end[];
 // 内核只读部分的开始地址
@@ -60,12 +62,12 @@ void page_fault(pt_regs_t * regs)
 
 void mm_init()
 {
-	uint32_t kern_start_pa = 1<<20;
-	uint32_t kern_end_pa = to_paddr((uint32_t)_kern_end);
-	uint32_t ro_start_pa = to_paddr((uint32_t)_ro_start);
-	uint32_t ro_end_pa = to_paddr((uint32_t)_ro_end);
+	uint32_t kern_start_pa = (uint32_t)_kern_start;
+	uint32_t kern_end_pa = (uint32_t)_kern_end;
+	uint32_t ro_start_pa = (uint32_t)_ro_start;
+	uint32_t ro_end_pa = (uint32_t)_ro_end;
 
-	/* 
+	/*
 	 * 内核页表存放在内存的固定区域 0x1000 开始的 32KB 空间
 	 * 由于此时还未修改页目录, 仍然可以使用在启动代码中设置的前 4MB 线性地址空间
 	 */
@@ -100,7 +102,7 @@ void mm_init()
 
 	mmap_entry_t * mmap_start_addr = (mmap_entry_t *)glb_mboot_ptr->mmap_addr;
 	mmap_entry_t * mmap_end_addr = (mmap_entry_t *)(glb_mboot_ptr->mmap_addr + glb_mboot_ptr->mmap_length);
-	
+
 	info_log("Memory Map", "");
 
 	for (mmap_entry_t * mmap = mmap_start_addr; mmap < mmap_end_addr; mmap++) {
