@@ -18,12 +18,14 @@ int flag = 0;
 
 int thread()
 {
+	int cnt = 0;
 	while (1) {
 		if (flag & 1) {
 			printk("B\n");
-			flag++;
+			flag = 0;
+			cnt++;
 		}
-		if (flag == 10) {
+		if (cnt == 10) {
 			break;
 		}
 	}
@@ -45,12 +47,14 @@ int kern_entry()
 
 	sti();
 
+	int cnt = 0;
 	while (1) {
 		if (!(flag & 1)) {
 			printk("A");
-			flag++;
+			flag = 1;
+			cnt++;
 		}
-		if (flag == 11) {
+		if (cnt == 10) {
 			break;
 		}
 	}

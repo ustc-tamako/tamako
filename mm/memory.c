@@ -63,9 +63,9 @@ void page_fault(pt_regs_t * regs)
 void mm_init()
 {
 	uint32_t kern_start_pa = (uint32_t)_kern_start;
-	uint32_t kern_end_pa = (uint32_t)_kern_end;
-	uint32_t ro_start_pa = (uint32_t)_ro_start;
-	uint32_t ro_end_pa = (uint32_t)_ro_end;
+	uint32_t kern_end_pa = to_paddr((uint32_t)_kern_end);
+	uint32_t ro_start_pa = to_paddr((uint32_t)_ro_start);
+	uint32_t ro_end_pa = to_paddr((uint32_t)_ro_end);
 
 	/*
 	 * 内核页表存放在内存的固定区域 0x1000 开始的 32KB 空间
@@ -86,11 +86,17 @@ void mm_init()
 
 	// 设置页目录表
 	pg_tab = (uint32_t *)PG_DIR;
-	// 内核页目录项的开始索引 0x300
-	i = vaddr_to_dir(PAGE_OFFSET);
+	// 内核部分之前的页目录, 索引在 0x300 之前
+	for (i = 0; i < vaddr_to_dir(PAGE_OFFSET); i++) {
+		pg_tab[i] = PG_NULL;
+	}
 	// 0xC0000000 开始的 32MB
 	for (int k = 0; k < MAX_FRAME_NUM>>10/* 8 */; k++, i++) {
 		pg_tab[i] = to_paddr(PG_TAB_K + (k<<12)) | PG_PRESENT | PG_WRITE;
+	}
+	// 剩余的页目录项
+	for (; i < 0x400; i++) {
+		pg_tab[i] = PG_NULL;
 	}
 
 	for (int i = 0; i < MAX_FRAME_NUM; i++) {
@@ -100,8 +106,8 @@ void mm_init()
 		list_node_init(&frame_tab[i].chain);
 	}
 
-	mmap_entry_t * mmap_start_addr = (mmap_entry_t *)glb_mboot_ptr->mmap_addr;
-	mmap_entry_t * mmap_end_addr = (mmap_entry_t *)(glb_mboot_ptr->mmap_addr + glb_mboot_ptr->mmap_length);
+	mmap_entry_t * mmap_start_addr = (mmap_entry_t *)to_vaddr(glb_mboot_ptr->mmap_addr);
+	mmap_entry_t * mmap_end_addr = (mmap_entry_t *)to_vaddr(glb_mboot_ptr->mmap_addr + glb_mboot_ptr->mmap_length);
 
 	info_log("Memory Map", "");
 
