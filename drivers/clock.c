@@ -2,6 +2,7 @@
 #include "clock.h"
 #include "isr.h"
 #include "common.h"
+#include "sched.h"
 #include "printk.h"
 
 #define FREQ_IN     1193180
@@ -15,6 +16,7 @@ void clk_intr(pt_regs_t * regs)
 {
 	static uint32_t tick = 0;
 	tick++;
+	schedule();
 	// printk("Tick: %d\n", tick);
 }
 

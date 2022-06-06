@@ -6,13 +6,29 @@
 #include "gdt.h"
 #include "mm.h"
 #include "fs.h"
+#include "sched.h"
 #include "common.h"
 
-uint32_t kern_stack[PAGE_SIZE<<1];
-uint32_t * stack_bottom = &kern_stack[PAGE_SIZE<<1];
+#include "printk.h"
 
 extern void buddy_main();
 extern void km_main();
+
+int flag = 0;
+
+int thread()
+{
+	while (1) {
+		if (flag & 1) {
+			printk("B\n");
+			flag++;
+		}
+		if (flag == 10) {
+			break;
+		}
+	}
+	return 0;
+}
 
 int kern_entry()
 {
@@ -23,8 +39,21 @@ int kern_entry()
 	uart_init();
 	clk_init();
 	mm_init();
+	sched_init();
+
+	kernel_thread(thread, NULL);
 
 	sti();
+
+	while (1) {
+		if (!(flag & 1)) {
+			printk("A");
+			flag++;
+		}
+		if (flag == 11) {
+			break;
+		}
+	}
 
 	km_main();
 	buddy_main();
