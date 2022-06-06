@@ -1,4 +1,3 @@
-
 #ifndef INCLUDE_MM_H_
 #define INCLUDE_MM_H_
 
@@ -32,7 +31,7 @@ struct frame_t {
 	 *   5:	标记该页框是否空闲
 	 */
 	uint16_t  flag;
-	void    * bkt_desc;	// kmalloc 存储桶中使用, 指向桶相应的描述符地址
+	void    * bkt_desc;		// kmalloc 存储桶中使用, 指向桶相应的描述符地址
 	list_node chain;		// buddy 链表中使用
 } frame_t;
 
@@ -63,7 +62,7 @@ typedef unsigned int page_t;
 #define PG_WRITE		0x2
 #define PG_USER			0x4
 // 页是否分配页框
-#define pg_mapped(pa)		((pa)&PG_PRESENT)
+#define pg_mapped(pa)	((pa)&PG_PRESENT)
 
 // 虚拟地址偏移量 3GB
 #define PAGE_OFFSET		0xC0000000

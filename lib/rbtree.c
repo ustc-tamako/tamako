@@ -74,7 +74,7 @@ static void rb_transplant(rb_tree * rb, rb_node * ndx, rb_node * ndy)
 	rb_set_parent(ndy, rb_parent(ndx));
 }
 
-void rb_insert_fixup(rb_tree * rb, rb_node * nd)
+static void rb_insert_fixup(rb_tree * rb, rb_node * nd)
 {
 	while (rb_is_red(rb_parent(nd))) {
 		if (rb_parent(nd) == rb_pparent(nd)->left) {
@@ -145,7 +145,7 @@ void rb_insert(rb_tree * rb, rb_node * nd)
 	rb_insert_fixup(rb, nd);
 }
 
-void rb_delete_fixup(rb_tree * rb, rb_node * nd)
+static void rb_delete_fixup(rb_tree * rb, rb_node * nd)
 {
 	while (nd != rb->root && rb_is_black(nd)) {
 		if (nd == rb_parent(nd)->left) {
