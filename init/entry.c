@@ -9,28 +9,8 @@
 #include "sched.h"
 #include "common.h"
 
-#include "printk.h"
-
 extern void buddy_main();
 extern void km_main();
-
-int flag = 0;
-
-int thread()
-{
-	int cnt = 0;
-	while (1) {
-		if (flag & 1) {
-			printk("B\n");
-			flag = 0;
-			cnt++;
-		}
-		if (cnt == 10) {
-			break;
-		}
-	}
-	return 0;
-}
 
 int kern_entry()
 {
@@ -43,24 +23,12 @@ int kern_entry()
 	mm_init();
 	sched_init();
 
-	kernel_thread(thread, NULL);
-
 	sti();
-
-	int cnt = 0;
-	while (1) {
-		if (!(flag & 1)) {
-			printk("A");
-			flag = 1;
-			cnt++;
-		}
-		if (cnt == 10) {
-			break;
-		}
-	}
 
 	km_main();
 	buddy_main();
+
+	init();
 
 	char * s = (char *)kmalloc(sizeof(char)*128);
 	ugets(s);

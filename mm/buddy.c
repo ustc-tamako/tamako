@@ -49,7 +49,7 @@ static uint32_t buddy_end_addr;
 
 /**
  * @brief 将输入页框数 n 向上转换为 2 的幂次数, 输出 order 是满足 2^order >= n * 的最小整数, 当 n 的值超出 MAX_ORDER 时, 返回 MAX_ORDER+1.
- * 
+ *
  * @param n 输入页框数
  * @return uint32_t 输出的 order 值
  */
@@ -150,7 +150,7 @@ static frame_t * __buddy_alloc(uint32_t order)
 		error_log("Buddy Alloction", "No more free frames.");
 		return NULL;
 	}
-	
+
 	// 取出链表的头节点
 	list_node * nd = list_first(&buddy_dir[od].head);
 	frame_t * fr = container_of(nd, frame_t, chain);
@@ -409,6 +409,6 @@ void buddy_main()
     buddy_free_frames(frames[7], 32);
     buddy_free_frames(frames[8], 129);
     buddy_free_frames(frames[9], 547);
-	
+
 	buddy_print();
 }

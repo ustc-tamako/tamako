@@ -9,8 +9,6 @@
 #define PAGE_SIZE		0x1000
 // 最大物理内存大小 32MB
 #define MAX_MM_SIZE		0x02000000
-// 最大虚拟内存大小 4GB
-#define MAX_VM_SIZE		1<<32
 // 最多支持的页框个数 8K
 #define MAX_FRAME_NUM	(MAX_MM_SIZE / FRAME_SIZE)
 // 最多支持的页个数
@@ -107,6 +105,8 @@ void mm_init();
 void * kmalloc(size_t len);
 
 void kfree(void * vaddr);
+
+void free_cache();
 
 // 打印物理页框的信息
 void fr_print(frame_t * fr);

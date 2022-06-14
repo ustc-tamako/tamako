@@ -60,7 +60,7 @@ cache_desc cache_dir[] = {
 };
 
 // 缓存大小上限, 当某个对象缓存的大小达到阀值后, 释放链表中 3/4 的对象
-#define CACHE_THRESHOLD	0x10000 //  64KB
+#define CACHE_THRESHOLD	0 //  64KB
 
 /*
  * 用于对象缓存链表中查找前驱和后继节点的宏
@@ -69,7 +69,7 @@ cache_desc cache_dir[] = {
 #define prev(c) (*(c))
 #define next(c) (*((c)+1))
 
-void bucket_init()
+static void bucket_init()
 {
 	// 申请一个页框, 用来存放空的桶描述符
 	bucket_desc * bkt_desc = (bucket_desc *)alloc_page();
@@ -213,48 +213,58 @@ void kfree(void * vaddr)
 	// 更改链表头
 	ch_desc->object = va;
 	ch_desc->list_len++;
+}
 
-	// 当缓存对象链表的总大小超过阀值时, 释放 3/4 的对象放回存储桶中
-	if (ch_desc->list_len * ch_desc->obj_size >= CACHE_THRESHOLD) {
-		bucket_desc * bkt_desc;
-		while (ch_desc->list_len * ch_desc->obj_size > CACHE_THRESHOLD>>2) {
-			// 从缓存对象链表中删除尾部节点, 即优先回收最早被释放的对象
-			obj = (uint32_t *)prev(ch_desc->object);
-			next((uint32_t *)prev(obj)) = (uint32_t)ch_desc->object;
-			prev(ch_desc->object) = (uint32_t)prev(obj);
-			ch_desc->list_len--;
-			// 根据对象所在的页找到相应的桶描述符
-			fr_idx = to_fr_idx(to_paddr(obj));
-			bkt_desc = (bucket_desc *)frame_tab[fr_idx].bkt_desc;
-			// 将 obj 插入到空闲对象链表的头部
-			*obj = (uint32_t)bkt_desc->free_ptr;
-			bkt_desc->free_ptr = (void *)*obj;
-			bkt_desc->ref_cnt--;
-			// 当前页面为空, 将其释放
-			if (bkt_desc->ref_cnt == 0) {
-				free_page(bkt_desc->page);
-				_bucket_desc * bkt_dir = bucket_dir + i;
-				if (bkt_desc->next != bkt_desc) {
-					// 链表节点数大于 1, 则将下一个节点的内容拷贝到当前节点, 并释放下一个节点
-					bucket_desc * bkt_next = bkt_desc->next;
-					*bkt_desc = *bkt_next;
-					if (bkt_dir->chain == bkt_next) {
-						bkt_dir->chain = bkt_desc;
+void free_cache()
+{
+	cache_desc * ch_desc = cache_dir;
+	while (ch_desc->obj_size != (uint16_t)-1) {
+		// 当缓存对象链表的总大小超过阀值时, 释放 3/4 的对象放回存储桶中
+		if (ch_desc->list_len * ch_desc->obj_size > CACHE_THRESHOLD) {
+			bucket_desc * bkt_desc;
+			while (ch_desc->list_len * ch_desc->obj_size > CACHE_THRESHOLD>>2) {
+				// 从缓存对象链表中删除尾部节点, 即优先回收最早被释放的对象
+				uint32_t * obj = (uint32_t *)prev(ch_desc->object);
+				next((uint32_t *)prev(obj)) = (uint32_t)ch_desc->object;
+				prev(ch_desc->object) = (uint32_t)prev(obj);
+				ch_desc->list_len--;
+				if (ch_desc->list_len == 0) {
+					ch_desc->object = NULL;
+				}
+				// 根据对象所在的页找到相应的桶描述符
+				uint32_t fr_idx = to_fr_idx(to_paddr(obj));
+				bkt_desc = (bucket_desc *)frame_tab[fr_idx].bkt_desc;
+				// 将 obj 插入到空闲对象链表的头部
+				*obj = (uint32_t)bkt_desc->free_ptr;
+				bkt_desc->free_ptr = (void *)*obj;
+				bkt_desc->ref_cnt--;
+				// 当前页面为空, 将其释放
+				if (bkt_desc->ref_cnt == 0) {
+					free_page(bkt_desc->page);
+					_bucket_desc * bkt_dir = bucket_dir + (ch_desc - cache_dir);
+					if (bkt_desc->next != bkt_desc) {
+						// 链表节点数大于 1, 则将下一个节点的内容拷贝到当前节点, 并释放下一个节点
+						bucket_desc * bkt_next = bkt_desc->next;
+						*bkt_desc = *bkt_next;
+						if (bkt_dir->chain == bkt_next) {
+							bkt_dir->chain = bkt_desc;
+						}
+						// 更新页框管理表
+						fr_idx = to_fr_idx(to_paddr(bkt_next->page));
+						frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
+						bkt_desc = bkt_next;
 					}
-					// 更新页框管理表
-					fr_idx = to_fr_idx(to_paddr(bkt_next->page));
-					frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
-					bkt_desc = bkt_next;
+					else {
+						bkt_dir->chain = NULL;
+					}
+					bkt_dir->list_len--;
+					bkt_desc->next = free_bucket_desc;
+					free_bucket_desc = bkt_desc;
 				}
-				else {
-					bkt_dir->chain = NULL;
-				}
-				bkt_dir->list_len--;
-				bkt_desc->next = free_bucket_desc;
-				free_bucket_desc = bkt_desc;
-			}
-		}
-	}
+			} // while
+		} // if
+		ch_desc++;
+	} // while
 }
 
 void km_print()

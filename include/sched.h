@@ -9,4 +9,6 @@ void schedule();
 
 void sched_init();
 
+void init();
+
 #endif  // INCLUDE_SCHED_H_

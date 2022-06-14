@@ -1,8 +1,7 @@
 #include "sched.h"
-#include "types.h"
 #include "mm.h"
-#include "string.h"
 #include "list.h"
+#include "printk.h"
 
 #define STACK_SIZE	PAGE_SIZE
 
@@ -57,7 +56,7 @@ static int kkill_zombie()
 	while (1) {
 		// 依次释放僵尸线程的资源
 		while (!list_is_empty(&zombie_queue)) {
-			task_t * task = container_of(list_first(&zombie_queue), task_t, chain); // 取僵尸链表的第一个 task
+			task_t * task = container_of(list_first(&zombie_queue), task_t, chain);	// 取僵尸链表的第一个 task
 			if (task != current) {
 				list_del(&task->chain);
 				free_page(task);	// 回收该线程的栈
@@ -66,6 +65,15 @@ static int kkill_zombie()
 				break;
 			}
 		}
+		schedule();
+	}
+	return 0;
+}
+
+static int kfree_km_cache()
+{
+	while (1) {
+		free_cache();
 		schedule();
 	}
 	return 0;
@@ -89,7 +97,7 @@ uint32_t kernel_thread(int (* fn)(void *), void * args)
 		*(--esp) = 0;
 	}
 	new_task->esp = esp;
-	list_add_tail(&new_task->chain, &ready_queue);	// 插入就绪链表
+	list_add_tail(&new_task->chain, &ready_queue);	// 插入就绪队列
 	return 0;
 }
 
@@ -109,5 +117,46 @@ void sched_init()
 {
 	task_t * idle = (task_t *)kern_stack;	// 创建 idle 线程
 	list_add_tail(&idle->chain, &ready_queue);
+}
+
+static int flag = 0;
+
+static int thread1()
+{
+	int cnt = 0;
+	while (1) {
+		if (!(flag & 1)) {
+			printk("A");
+			flag = 1;
+			cnt++;
+		}
+		if (cnt == 10) {
+			break;
+		}
+	}
+	return 0;
+}
+
+static int thread2()
+{
+	int cnt = 0;
+	while (1) {
+		if (flag & 1) {
+			printk("B\n");
+			flag = 0;
+			cnt++;
+		}
+		if (cnt == 10) {
+			break;
+		}
+	}
+	return 0;
+}
+
+void init()
+{
 	kernel_thread(kkill_zombie, NULL);	// 创建僵尸回收线程
+	kernel_thread(kfree_km_cache, NULL);
+	kernel_thread(thread1, NULL);
+	kernel_thread(thread2, NULL);
 }

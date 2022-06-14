@@ -10,17 +10,17 @@
 	#define FALSE 0
 #endif
 
-/* 
+/*
  * =============================================================
- * 
+ *
  *                         32bits - System
- * 
+ *
  *               char :  1B                 short :  2B
  *      unsigned char :  1B        unsigned short :  2B
  *             char * :  4B                  long :  4B
  *                int :  4B         unsigned long :  4B
  *       unsigned int :  4B             long long :  8B
- * 
+ *
  * =============================================================
  */
 
@@ -50,12 +50,11 @@ struct pt_regs_t {
 	uint32_t err_code;	// 错误代码
 
 	// 处理器自动压入
-	uint32_t eip;       
+	uint32_t eip;
 	uint32_t cs;
 	uint32_t eflags;
 	uint32_t usr_esp;
 	uint32_t ss;        // 堆栈段寄存器
 } pt_regs_t;
-
 
 #endif  // INCLUDE_TYPES_H_
