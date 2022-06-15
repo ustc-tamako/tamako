@@ -9,8 +9,6 @@
 #include "sched.h"
 #include "common.h"
 
-extern void buddy_main();
-extern void km_main();
 
 int kern_entry()
 {
@@ -25,17 +23,9 @@ int kern_entry()
 
 	sti();
 
-	km_main();
-	buddy_main();
-
 	init();
 
-	char * s = (char *)kmalloc(sizeof(char)*128);
-	ugets(s);
-	uputs(s);
-	kfree(s);
-
-	no_bug_please();
+	test();
 
 	while (1);
 

@@ -267,6 +267,13 @@ void free_cache()
 	} // while
 }
 
+
+/**************************************************
+ *                                                *
+ *                    Test Code                   *
+ *                                                *
+ **************************************************/
+
 void km_print()
 {
 	info_log("Kmalloc", "");
@@ -297,7 +304,7 @@ void km_print()
 	}
 }
 
-void km_main()
+void kmalloc_test()
 {
 	typedef
  	struct km_test_t {

@@ -31,7 +31,7 @@ void panic(const char * msg)
 		printk("[0x%08x] %s\n", *eip, elf_lookup_symbol(*eip, &kernel_elf)); // 根据代码地址查找符号表, 找到所属的函数名
 		ebp = (uint32_t *) *ebp; // 当前函数的 ebp 里存放了上一个函数的 ebp
 	}
-	
+
 	while(1);
 }
 
@@ -50,7 +50,20 @@ void error_log(const char * type, const char * msg)
 	printk("\033[01m\033[31m[%s Error]\033[0m  %s\n", type, msg);
 }
 
-void no_bug_please()
+static void no_bug_please()
 {
 	printk("\n\n%64s\n", "\033[01m\033[36mTamako daisuki! Dozo!\033[0m");
+}
+
+extern void buddy_test();
+extern void kmalloc_test();
+extern void sched_test();
+
+void test()
+{
+	kmalloc_test();
+	buddy_test();
+	sched_test();
+
+	no_bug_please();
 }

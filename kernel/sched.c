@@ -1,16 +1,12 @@
 #include "sched.h"
 #include "mm.h"
-#include "list.h"
 #include "printk.h"
+#include "debug.h"
+#include "pid.h"
 
 #define STACK_SIZE	PAGE_SIZE
 
-typedef
-struct task_t
-{
-	uint32_t * esp;
-	list_node  chain;	// 链表节点
-} task_t;
+task_t * task_tbl[NR_TASKS];
 
 // 内核栈, 按页对齐
 static uint32_t kern_stack[STACK_SIZE>>2] __attribute__((aligned(STACK_SIZE)));
@@ -19,9 +15,6 @@ uint32_t * stack_bottom = &kern_stack[STACK_SIZE>>2];
 // 就绪队列和僵尸队列
 static list_node ready_queue = list_empty_head(ready_queue);
 static list_node zombie_queue = list_empty_head(zombie_queue);
-
-// 在 kernel/asm/sched.s 定义
-extern void switch_to(task_t * prev, task_t * next);
 
 // 获取当前线程
 #define current get_current()
@@ -32,6 +25,9 @@ static inline task_t * get_current()
 	__asm__ __volatile__ ("and %%esp, %0" : "=r" (cur) : "0" (~(STACK_SIZE-1))); // task_t 存放在栈的低地址处, 通过 esp & 0xFFFFF000 得到
 	return cur;
 }
+
+// 在 kernel/asm/sched.s 定义
+extern void switch_to(task_t * prev, task_t * next);
 
 // 内核线程退出
 static void kthread_exit(int stat)
@@ -59,6 +55,8 @@ static int kkill_zombie()
 			task_t * task = container_of(list_first(&zombie_queue), task_t, chain);	// 取僵尸链表的第一个 task
 			if (task != current) {
 				list_del(&task->chain);
+				task_tbl[task->pid] = NULL;
+				free_pid(task->pid);
 				free_page(task);	// 回收该线程的栈
 			}
 			else {
@@ -84,6 +82,7 @@ uint32_t kernel_thread(int (* fn)(void *), void * args)
 {
 	// 给线程栈分配一个页, task_t 位于页的低地址处
 	task_t * new_task = (task_t *)alloc_page();
+
 	// 初始化栈
 	uint32_t * ebp = (uint32_t *)((uint32_t)new_task + STACK_SIZE);
 	uint32_t * esp = ebp;
@@ -96,8 +95,13 @@ uint32_t kernel_thread(int (* fn)(void *), void * args)
 	for (int i = 0; i < 8; i++) {	// 8 个寄存器值
 		*(--esp) = 0;
 	}
+
 	new_task->esp = esp;
+	new_task->pid = alloc_pid();
+	task_tbl[new_task->pid] = new_task;
+
 	list_add_tail(&new_task->chain, &ready_queue);	// 插入就绪队列
+
 	return 0;
 }
 
@@ -115,13 +119,40 @@ void schedule()
 
 void sched_init()
 {
-	task_t * idle = (task_t *)kern_stack;	// 创建 idle 线程
+
+}
+
+void init()
+{
+	task_t * idle = (task_t *)kern_stack;	// idle 线程
+	idle->pid = alloc_pid(); // pid = 0
+	task_tbl[idle->pid] = idle;
 	list_add_tail(&idle->chain, &ready_queue);
+
+	kernel_thread(kkill_zombie, NULL);	// 创建僵尸回收线程
+	kernel_thread(kfree_km_cache, NULL);
+}
+
+
+/**************************************************
+ *                                                *
+ *                    Test Code                   *
+ *                                                *
+ **************************************************/
+
+void task_print()
+{
+	info_log("Task", "");
+	for (int i = 0; i < NR_TASKS; i++) {
+		if (task_tbl[i] != NULL) {
+			printk("Task\033[032m<%4d>\033[0m\t|ID_%02d|\n", to_fr_idx(to_paddr(task_tbl[i])), task_tbl[i]->pid);
+		}
+	}
 }
 
 static int flag = 0;
 
-static int thread1()
+static int test_thread1()
 {
 	int cnt = 0;
 	while (1) {
@@ -137,7 +168,7 @@ static int thread1()
 	return 0;
 }
 
-static int thread2()
+static int test_thread2()
 {
 	int cnt = 0;
 	while (1) {
@@ -153,10 +184,9 @@ static int thread2()
 	return 0;
 }
 
-void init()
+void sched_test()
 {
-	kernel_thread(kkill_zombie, NULL);	// 创建僵尸回收线程
-	kernel_thread(kfree_km_cache, NULL);
-	kernel_thread(thread1, NULL);
-	kernel_thread(thread2, NULL);
+	kernel_thread(test_thread1, NULL);
+	kernel_thread(test_thread2, NULL);
+	task_print();
 }

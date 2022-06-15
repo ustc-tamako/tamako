@@ -109,10 +109,10 @@ void mm_init()
 	mmap_entry_t * mmap_start_addr = (mmap_entry_t *)to_vaddr(glb_mboot_ptr->mmap_addr);
 	mmap_entry_t * mmap_end_addr = (mmap_entry_t *)to_vaddr(glb_mboot_ptr->mmap_addr + glb_mboot_ptr->mmap_length);
 
-	info_log("Memory Map", "");
+	// info_log("Memory Map", "");
 
 	for (mmap_entry_t * mmap = mmap_start_addr; mmap < mmap_end_addr; mmap++) {
-		printk("Base_addr:0x%08X\tLength:0x%08X\tType = 0x%X\n", mmap->base_addr_low, mmap->length_low, mmap->type);
+		// printk("Base_addr:0x%08X\tLength:0x%08X\tType = 0x%X\n", mmap->base_addr_low, mmap->length_low, mmap->type);
 		if (mmap->base_addr_low == kern_start_pa) {
 			int n = mmap->length_low - (kern_end_pa - kern_start_pa);
 			mm_ops->init((void *)kern_end_pa, n>>12);

@@ -305,6 +305,13 @@ int buddy_free_frames(void * addr, size_t n)
 	return TRUE;
 }
 
+
+/**************************************************
+ *                                                *
+ *                    Test Code                   *
+ *                                                *
+ **************************************************/
+
 void fr_print(frame_t * fr)
 {
 	printk("\033[032m<%4d>\033[0m\t|OD_%02d", fr_index(fr), buddy_order(fr));
@@ -356,7 +363,7 @@ void buddy_print()
 	}
 }
 
-void buddy_main()
+void buddy_test()
 {
 	// buddy_init((void *)0x13000, MAX_FRAME_NUM-227);
 
