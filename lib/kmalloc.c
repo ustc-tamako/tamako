@@ -1,6 +1,7 @@
 #include "mm.h"
 #include "printk.h"
 #include "debug.h"
+#include "spinlock.h"
 
 typedef
 struct bucket_desc {
@@ -16,47 +17,50 @@ struct _bucket_desc {
 	uint16_t      obj_size;
 	uint16_t      list_len;
 	bucket_desc * chain;
-} _bucket_desc; // 8B
+	spinlock_t    lock;
+} _bucket_desc;
 
 // 桶目录
-_bucket_desc bucket_dir[] = {
-	{8,		0,	(bucket_desc *)NULL}, // 8B
-	{16,	0,	(bucket_desc *)NULL}, // 16B
-	{32,	0,	(bucket_desc *)NULL}, // 32B
-	{64,	0,	(bucket_desc *)NULL}, // 64B
-	{128,	0,	(bucket_desc *)NULL}, // 128B
-	{256,	0,	(bucket_desc *)NULL}, // 256B
-	{512,	0,	(bucket_desc *)NULL}, // 512B
-	{1024,	0,	(bucket_desc *)NULL}, // 1024B
-	{2048,	0,	(bucket_desc *)NULL}, // 2048B
-	{4096,	0,	(bucket_desc *)NULL}, // 4096B
-	{(uint16_t)-1,	0,	(bucket_desc *)NULL}
+static _bucket_desc bucket_dir[] = {
+	{8,		0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 8B
+	{16,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 16B
+	{32,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 32B
+	{64,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 64B
+	{128,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 128B
+	{256,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 256B
+	{512,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 512B
+	{1024,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 1024B
+	{2048,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 2048B
+	{4096,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 4096B
+	{(uint16_t)-1,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}
 };
 
-list_node free_bucket_frames_head = list_empty_head(free_bucket_frames_head);
+static list_node free_bucket_frames_head = list_empty_head(free_bucket_frames_head);
 // 空闲桶描述符链表头
-bucket_desc * free_bucket_desc = (bucket_desc *)NULL;
+static bucket_desc * free_bucket_desc = (bucket_desc *)NULL;
+static spinlock_t free_bucket_lock = SPINLOCK_FREE;
 
 typedef
 struct cache_desc {
 	uint16_t   obj_size;
 	uint16_t   list_len;
 	uint32_t * object;
-} cache_desc; // 8B
+	spinlock_t lock;
+} cache_desc;
 
 // 对象缓存目录
-cache_desc cache_dir[] = {
-	{8,		0,	(uint32_t *)NULL}, // 8B
-	{16,	0,	(uint32_t *)NULL}, // 16B
-	{32,	0,	(uint32_t *)NULL}, // 32B
-	{64,	0,	(uint32_t *)NULL}, // 64B
-	{128,	0,	(uint32_t *)NULL}, // 128B
-	{256,	0,	(uint32_t *)NULL}, // 256B
-	{512,	0,	(uint32_t *)NULL}, // 512B
-	{1024,	0,	(uint32_t *)NULL}, // 1024B
-	{2048,	0,	(uint32_t *)NULL}, // 2048B
-	{4096,	0,	(uint32_t *)NULL}, // 4096B
-	{(uint16_t)-1,	0,	(uint32_t *)NULL}
+static cache_desc cache_dir[] = {
+	{8,		0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 8B
+	{16,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 16B
+	{32,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 32B
+	{64,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 64B
+	{128,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 128B
+	{256,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 256B
+	{512,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 512B
+	{1024,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 1024B
+	{2048,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 2048B
+	{4096,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 4096B
+	{(uint16_t)-1,	0,	(uint32_t *)NULL, SPINLOCK_FREE}
 };
 
 // 缓存大小上限, 当某个对象缓存的大小达到阀值后, 释放链表中 3/4 的对象
@@ -73,12 +77,13 @@ static void bucket_init()
 {
 	// 申请一个页框, 用来存放空的桶描述符
 	bucket_desc * bkt_desc = (bucket_desc *)alloc_page();
-	list_add_tail(&to_fr(to_paddr(bkt_desc))->chain, &free_bucket_frames_head);
 	if (bkt_desc == NULL) {
-		panic("Memory Error: Heap init failed, no more page for bucket description.");
+		error_log("Kmalloc Init", "No more page for bucket description.");
+		panic("Memory Error");
 	}
 	// 设置空闲桶描述符链表
 	free_bucket_desc = bkt_desc;
+	list_add_tail(&to_fr(to_paddr(bkt_desc))->chain, &free_bucket_frames_head);
 	// 最后一个描述符的 next 指针赋为空
 	bkt_desc += PAGE_SIZE/sizeof(bucket_desc) - 1;
 	bkt_desc->next = NULL;
@@ -98,6 +103,7 @@ void * kmalloc(size_t len)
 	}
 	cache_desc * ch_desc = cache_dir + i;
 	// 首先在对象缓存中寻找
+	spin_lock(&ch_desc->lock);
 	if (ch_desc->list_len > 0) {
 		ret = ch_desc->object;
 		// ret 是链表中的最后一个对象
@@ -110,17 +116,21 @@ void * kmalloc(size_t len)
 			prev((uint32_t *)next(ret)) = prev(ret);
 			ch_desc->object = (uint32_t *)next(ret);
 		}
+		spin_unlock(&ch_desc->lock);
 		// 清空对象头部的两个指针
 		*ret = NULL;
 		*(ret+1) = NULL;
 		return (void *)ret;
 	}
+	spin_unlock(&ch_desc->lock);
 
 	// 对象缓存中未找到, 则在对象存储桶中查找
 	bkt_dir = bucket_dir + i;
 	if (bkt_dir->obj_size == (uint16_t)-1) {
-		panic("Memory Error: Try to alloc block larger than 4KB.");
+		error_log("Kmalloc", "Try to alloc block larger than 4KB.");
+		return NULL;
 	}
+	spin_lock(&bkt_dir->lock);
 	bucket_desc * bkt_desc = bkt_dir->chain;
 	// 从桶描述符链表中查找第一个有空闲区域的项
 	if (bkt_desc != NULL) {
@@ -131,13 +141,16 @@ void * kmalloc(size_t len)
 	// 没有找到空闲的描述符, 就从空闲桶描述符链表中取一个
 	if (bkt_desc == NULL || bkt_desc->free_ptr == NULL) {
 		// 空闲桶描述符链表为空, 则调用初始化函数
+		spin_lock(&free_bucket_lock);
 		if (free_bucket_desc == NULL) {
 			bucket_init();
 		}
-		uint32_t fr_idx;
 		// 取空闲桶描述符链表的头节点
 		bkt_desc = free_bucket_desc;
 		free_bucket_desc = free_bucket_desc->next;
+		spin_unlock(&free_bucket_lock);
+
+		uint32_t fr_idx;
 		bucket_desc * bkt_next = bkt_dir->chain;
 		if (bkt_next != NULL) {
 			// 头节点不为空, 则将头节点的数据拷贝到新节点中, 再将新节点插入头节点后
@@ -145,7 +158,9 @@ void * kmalloc(size_t len)
 			bkt_next->next = bkt_desc;
 			// 更新页框管理表
 			fr_idx = to_fr_idx(to_paddr(bkt_next->page));
+			spin_lock(&frame_tab[fr_idx].lock);
 			frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
+			spin_unlock(&frame_tab[fr_idx].lock);
 			bkt_desc = bkt_next;
 		}
 		else {
@@ -175,6 +190,7 @@ void * kmalloc(size_t len)
 	ret = bkt_desc->free_ptr;
 	bkt_desc->free_ptr = (void *)*ret;
 	bkt_desc->ref_cnt++;
+	spin_unlock(&bkt_dir->lock);
 	// 将空闲对象的指针清零返回
 	*ret = 0;
 	return (void *)ret;
@@ -195,8 +211,10 @@ void kfree(void * vaddr)
 	}
 	ch_desc = cache_dir + i;
 	if (ch_desc->obj_size == (uint16_t)-1) {
-		panic("Memory Error: Invalid obj_size, seems something wrong in frame_tab.");
+		error_log("Kfree", "Invalid obj_size, seems something wrong in frame_tab.");
+		return;
 	}
+	spin_lock(&ch_desc->lock);
 	// 把要释放的对象插入缓存链表中
 	uint32_t * obj = ch_desc->object;
 	// 该对象是双链表中的第一个节点
@@ -213,6 +231,7 @@ void kfree(void * vaddr)
 	// 更改链表头
 	ch_desc->object = va;
 	ch_desc->list_len++;
+	spin_unlock(&ch_desc->lock);
 }
 
 void free_cache()
@@ -220,8 +239,8 @@ void free_cache()
 	cache_desc * ch_desc = cache_dir;
 	while (ch_desc->obj_size != (uint16_t)-1) {
 		// 当缓存对象链表的总大小超过阀值时, 释放 3/4 的对象放回存储桶中
+		spin_lock(&ch_desc->lock);
 		if (ch_desc->list_len * ch_desc->obj_size > CACHE_THRESHOLD) {
-			bucket_desc * bkt_desc;
 			while (ch_desc->list_len * ch_desc->obj_size > CACHE_THRESHOLD>>2) {
 				// 从缓存对象链表中删除尾部节点, 即优先回收最早被释放的对象
 				uint32_t * obj = (uint32_t *)prev(ch_desc->object);
@@ -233,7 +252,9 @@ void free_cache()
 				}
 				// 根据对象所在的页找到相应的桶描述符
 				uint32_t fr_idx = to_fr_idx(to_paddr(obj));
-				bkt_desc = (bucket_desc *)frame_tab[fr_idx].bkt_desc;
+				bucket_desc * bkt_desc = (bucket_desc *)frame_tab[fr_idx].bkt_desc;
+				_bucket_desc * bkt_dir = bucket_dir + (ch_desc - cache_dir);
+				spin_lock(&bkt_dir->lock);
 				// 将 obj 插入到空闲对象链表的头部
 				*obj = (uint32_t)bkt_desc->free_ptr;
 				bkt_desc->free_ptr = (void *)*obj;
@@ -241,7 +262,6 @@ void free_cache()
 				// 当前页面为空, 将其释放
 				if (bkt_desc->ref_cnt == 0) {
 					free_page(bkt_desc->page);
-					_bucket_desc * bkt_dir = bucket_dir + (ch_desc - cache_dir);
 					if (bkt_desc->next != bkt_desc) {
 						// 链表节点数大于 1, 则将下一个节点的内容拷贝到当前节点, 并释放下一个节点
 						bucket_desc * bkt_next = bkt_desc->next;
@@ -251,18 +271,24 @@ void free_cache()
 						}
 						// 更新页框管理表
 						fr_idx = to_fr_idx(to_paddr(bkt_next->page));
+						spin_lock(&frame_tab[fr_idx].lock);
 						frame_tab[fr_idx].bkt_desc = (void *)bkt_desc;
+						spin_unlock(&frame_tab[fr_idx].lock);
 						bkt_desc = bkt_next;
 					}
 					else {
 						bkt_dir->chain = NULL;
 					}
 					bkt_dir->list_len--;
+					spin_lock(&free_bucket_lock);
 					bkt_desc->next = free_bucket_desc;
 					free_bucket_desc = bkt_desc;
+					spin_unlock(&free_bucket_lock);
 				}
+				spin_unlock(&bkt_dir->lock);
 			} // while
 		} // if
+		spin_unlock(&ch_desc->lock);
 		ch_desc++;
 	} // while
 }

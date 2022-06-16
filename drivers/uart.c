@@ -25,6 +25,7 @@ static uart_t uart;
 
 void uputc(char c)
 {
+	cli();
 	if (uart.tx_on == 1) {
 		uart.obuf[uart.otail++] = c;
 		uart.otail %= BUF_SIZE;
@@ -35,6 +36,7 @@ void uputc(char c)
 		outb(uart.base+1, inb(uart.base+1)|0x02);
 		outb(uart.base, c);
 	}
+	sti();
 }
 
 void uputs(char * str)
@@ -47,10 +49,12 @@ void uputs(char * str)
 char ugetc()
 {
 	while (uart.ilen <= 0);
+	cli();
 	char c;
 	c = uart.ibuf[uart.ihead++];
 	uart.ihead %= BUF_SIZE;
 	uart.ilen--;
+	sti();
 	return c;
 }
 
@@ -137,6 +141,6 @@ void uart_init()
 	outb(uart.base+1, 0x06);
 	// 当前无中断
 	outb(uart.base+2, 0x01);
-	
+
 	register_intr_handler(36, uart_intr);
 }

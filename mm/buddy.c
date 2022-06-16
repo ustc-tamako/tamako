@@ -22,6 +22,7 @@ mm_operations const buddy_operations = {
 // 伙伴算法分配的连续页框数从 2^0 - 2^10 个
 #define MAX_ORDER	10
 static buddy_desc buddy_dir[MAX_ORDER+1];
+static spinlock_t buddy_dir_lock = SPINLOCK_FREE;
 
 // 使用伙伴算法管理的物理地址区间
 static uint32_t buddy_start_addr;
@@ -139,6 +140,7 @@ int buddy_init(void * addr, size_t n)
 
 static frame_t * __buddy_alloc(uint32_t order)
 {
+	spin_lock(&buddy_dir_lock);
 	// 查找第一个符合分配要求的链表
 	uint32_t od = order;
 	while (od <= MAX_ORDER && list_is_empty(&buddy_dir[od].head)) {
@@ -148,26 +150,32 @@ static frame_t * __buddy_alloc(uint32_t order)
 	// 分配失败的情况, 输入的 order 太大, 或者没有找到符合条件的非空链表
 	if (od > MAX_ORDER) {
 		error_log("Buddy Alloction", "No more free frames.");
+		spin_unlock(&buddy_dir_lock);
 		return NULL;
 	}
 
 	// 取出链表的头节点
 	list_node * nd = list_first(&buddy_dir[od].head);
 	frame_t * fr = container_of(nd, frame_t, chain);
+	spin_lock(&fr->lock);
 	fr->flag &= ~BUDDY_FREE;
 	buddy_set_order(fr, order);
 	list_del(nd);
 	buddy_dir[od].list_len--;
+	spin_unlock(&fr->lock);
 
 	// 将多余的连续块分解为多个不同 order 的块, 分别放回伙伴系统相应的链表中
 	while (od > order) {
 		od--;
 		frame_t * buddy = fr + (1<<od);
+		spin_lock(&buddy->lock);
 		buddy->flag |= BUDDY_FREE;
 		buddy_set_order(buddy, od);
 		list_add_tail(&buddy->chain, &buddy_dir[od].head);
 		buddy_dir[od].list_len++;
+		spin_unlock(&buddy->lock);
 	}
+	spin_unlock(&buddy_dir_lock);
 
 	return fr;
 }
@@ -197,8 +205,10 @@ void * buddy_alloc_frames(size_t n)
 		frame_t * f = fr;
 		while (ni > 0) {
 			if ((ni & sz) != 0) {
+				spin_lock(&f->lock);
 				f->flag &= ~BUDDY_FREE;
 				buddy_set_order(f, od);
+				spin_unlock(&f->lock);
 				f += sz;
 				ni -= sz;
 			}
@@ -209,18 +219,22 @@ void * buddy_alloc_frames(size_t n)
 		ni = (1<<order) - n;
 		od = 0;
 		sz = 1;
+		spin_lock(&buddy_dir_lock);
 		while (ni > 0) {
 			if ((ni & sz) != 0) {
+				spin_lock(&f->lock);
 				f->flag |= BUDDY_FREE;
 				buddy_set_order(f, od);
 				list_add_tail(&f->chain, &buddy_dir[od].head);
 				buddy_dir[od].list_len++;
+				spin_unlock(&f->lock);
 				f += sz;
 				ni -= sz;
 			}
 			od++;
 			sz <<= 1;
 		}
+		spin_unlock(&buddy_dir_lock);
 	}
 
 	return (void *)fr_paddr(fr);
@@ -232,8 +246,12 @@ static void __buddy_free(frame_t * fr)
 	uint32_t order = buddy_order(fr);
 	uint32_t bd_idx;
 	frame_t * buddy = NULL;
+
+	spin_lock(&buddy_dir_lock);
 	while (1) {
+		spin_lock(&fr->lock);
 		fr->flag |= BUDDY_FREE;
+		spin_unlock(&fr->lock);
 		bd_idx = buddy_index(fr_idx, order);
 		buddy = frame_tab + bd_idx;
 
@@ -242,29 +260,40 @@ static void __buddy_free(frame_t * fr)
 		 * 1. 页框的 order 有效且与其伙伴的 order 相等
 		 * 2. 其伙伴应该属于伙伴系统管理, 且未被分配
 		 */
+		spin_lock(&buddy->lock);
 		if ( ! (order < MAX_ORDER
 			&& (order == buddy_order(buddy))
 			&& buddy_is_valid(buddy)
 			&& buddy_is_free(buddy)) ) {
+			spin_unlock(&buddy->lock);
 			break;
 		}
 		list_del(&buddy->chain);
 		buddy_dir[order].list_len--;
+		spin_unlock(&buddy->lock);
 
 		// 得到合并后新块的首个页框
 		fr_idx &= bd_idx;
 		fr = frame_tab + fr_idx;
 		// 将新块在原 order 下的伙伴标记为无效
 		buddy = buddy_frame(fr, order);
+		spin_lock(&buddy->lock);
 		buddy->flag &= ~BUDDY_FREE;
 		buddy_set_order(buddy, -1);
+		spin_unlock(&buddy->lock);
 		// 给新块设置 order
 		order++;
+		spin_lock(&fr->lock);
 		buddy_set_order(fr, order);
+		spin_unlock(&fr->lock);
 	}
 
+	spin_lock(&fr->lock);
 	list_add_tail(&fr->chain, &buddy_dir[order].head);
 	buddy_dir[order].list_len++;
+	spin_unlock(&fr->lock);
+
+	spin_unlock(&buddy_dir_lock);
 }
 
 int buddy_free_frames(void * addr, size_t n)

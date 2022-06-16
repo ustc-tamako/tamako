@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "list.h"
+#include "spinlock.h"
 
 // 内存页(框)大小 4KB
 #define FRAME_SIZE		0x1000
@@ -21,16 +22,17 @@
  */
 typedef
 struct frame_t {
-	uint16_t  ref_cnt;		// 页框的引用计数
+	uint16_t   ref_cnt;		// 页框的引用计数
 	/**
 	 * 页框的标志位集合
 	 * 3-0:	伙伴系统中使用的 order 值, 范围在 0-10 之间, 值为 15 表示无效
 	 *   4: 标记该页框是否被用于伙伴系统
 	 *   5:	标记该页框是否空闲
 	 */
-	uint16_t  flag;
-	void    * bkt_desc;		// kmalloc 存储桶中使用, 指向桶相应的描述符地址
-	list_node chain;		// buddy 链表中使用
+	uint16_t   flag;
+	void     * bkt_desc;	// kmalloc 存储桶中使用, 指向桶相应的描述符地址
+	list_node  chain;		// buddy 链表中使用
+	spinlock_t lock;		// 互斥锁
 } frame_t;
 
 // 管理所有物理页框的数组
