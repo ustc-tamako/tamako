@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define INVALID_PID	0
+#define INVALID_PID	0	// pid 0 固定保留给 idle 线程
 
 uint8_t alloc_pid();
 

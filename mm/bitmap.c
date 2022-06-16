@@ -1,3 +1,4 @@
+#ifdef __ABORT__
 #include "mm.h"
 #include "debug.h"
 
@@ -35,7 +36,7 @@ uint32_t bm_alloc_frame()
 	uint32_t frame = NULL;
 	while (i < idx_to_row(MAX_FRAME_NUM)) {
 		// 查找位图项中第一个不为 1 的位
-		wd = ~frame_map[i] & (frame_map[i]+1); 
+		wd = ~frame_map[i] & (frame_map[i]+1);
 		if (wd != 0) {
 			j = 0;
 			if ((wd & 0xFFFF) == 0) {
@@ -67,3 +68,5 @@ uint32_t bm_alloc_frame()
 	}
 	return frame;
 }
+
+#endif

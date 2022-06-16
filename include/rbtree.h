@@ -25,18 +25,30 @@ extern rb_node const	__rb_null;
 
 #define rb_nullptr		(rb_node *)&__rb_null
 
-#define rb_parent(nd)	((rb_node *)((nd)->__color_parent & ~3))
-#define rb_pparent(nd)	rb_parent(rb_parent(nd))
-#define rb_color(nd)	((nd)->__color_parent & 1)
-#define rb_is_red(nd)	(!rb_color(nd))
-#define rb_is_black(nd)	rb_color(nd)
+static inline rb_node * rb_parent(rb_node * nd)
+{
+	return (rb_node *)((nd)->__color_parent & ~3);
+}
 
-#define rb_init_node(nd) \
-	do { \
-		rb_set_parent_color(nd, rb_nullptr, RB_RED); \
-		(nd)->left = rb_nullptr; \
-		(nd)->right = rb_nullptr; \
-	} while (0); \
+static inline rb_node * rb_pparent(rb_node * nd)
+{
+	return rb_parent(rb_parent(nd));
+}
+
+static inline int rb_color(rb_node * nd)
+{
+	return nd->__color_parent & 1;
+}
+
+static inline int rb_is_red(rb_node * nd)
+{
+	return !rb_color(nd);
+}
+
+static inline int rb_is_black(rb_node * nd)
+{
+	return rb_color(nd);
+}
 
 static inline void rb_set_parent(rb_node * nd, rb_node * pa)
 {
@@ -51,6 +63,13 @@ static inline void rb_set_color(rb_node * nd, int clr)
 static inline void rb_set_parent_color(rb_node * nd, rb_node * pa, int clr)
 {
 	nd->__color_parent = (uint32_t)pa | (clr & 1);
+}
+
+static inline void rb_init_node(rb_node * nd)
+{
+	rb_set_parent_color(nd, rb_nullptr, RB_RED);
+	nd->left = rb_nullptr;
+	nd->right = rb_nullptr;
 }
 
 void rb_insert(rb_tree * rb, rb_node * nd);

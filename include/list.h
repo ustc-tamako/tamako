@@ -10,6 +10,8 @@ struct list_node
 	struct list_node * next;
 } list_node;
 
+#define list_empty_head(nd)		{&(nd), &(nd)}
+
 static inline void list_node_init(list_node * nd)
 {
 	nd->prev = nd;
@@ -30,14 +32,35 @@ static inline void __list_del(list_node * prev, list_node * next)
 	next->prev = prev;
 }
 
-#define list_add(nd, pos)		__list_add(nd, pos, (pos)->next)
-#define list_add_tail(nd, pos)	__list_add(nd, (pos)->prev, pos)
-#define list_del(nd)			__list_del((nd)->prev, (nd)->next)
+static inline void list_add(list_node * nd, list_node * pos)
+{
+	__list_add(nd, pos, (pos)->next);
+}
 
-#define list_empty_head(nd)		{&(nd), &(nd)}
-#define list_is_empty(nd)		((nd) == (nd)->next)
-#define list_first(head)		((head)->next)
-#define list_last(head)			((head)->prev)
+static inline void list_add_tail(list_node * nd, list_node * pos)
+{
+	__list_add(nd, (pos)->prev, pos);
+}
+
+static inline void list_del(list_node * nd)
+{
+	__list_del((nd)->prev, (nd)->next);
+}
+
+static inline int list_is_empty(list_node * nd)
+{
+	return (nd == nd->next);
+}
+
+static inline list_node * list_first(list_node * head)
+{
+	return head->next;
+}
+
+static inline list_node * list_last(list_node * head)
+{
+	return head->prev;
+}
 
 #define list_for_each(p, head) \
 	for ((p) = list_first(head); (p) != (head); (p) = (p)->next)

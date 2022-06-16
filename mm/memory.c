@@ -9,9 +9,9 @@
 frame_t frame_tab[MAX_FRAME_NUM];
 
 // 页目录地址, 位于物理地址的 0x0 处
-#define PG_DIR		to_vaddr(0x0)
+#define PG_DIR		(uint32_t *)to_vaddr(0x0)
 // 内核页表区域, 位于物理地址的 0x1000 开始处
-#define PG_TAB_K	to_vaddr(0x1000)
+#define PG_TAB_K	(uint32_t *)to_vaddr(0x1000)
 
 // 内核静态区域的开始地址
 extern uint8_t _kern_start[];
@@ -63,15 +63,15 @@ void page_fault(pt_regs_t * regs)
 void mm_init()
 {
 	uint32_t kern_start_pa = (uint32_t)_kern_start;
-	uint32_t kern_end_pa = to_paddr((uint32_t)_kern_end);
-	uint32_t ro_start_pa = to_paddr((uint32_t)_ro_start);
-	uint32_t ro_end_pa = to_paddr((uint32_t)_ro_end);
+	uint32_t kern_end_pa = (uint32_t)to_paddr(_kern_end);
+	uint32_t ro_start_pa = (uint32_t)to_paddr(_ro_start);
+	uint32_t ro_end_pa = (uint32_t)to_paddr(_ro_end);
 
 	/*
 	 * 内核页表存放在内存的固定区域 0x1000 开始的 32KB 空间
 	 * 由于此时还未修改页目录, 仍然可以使用在启动代码中设置的前 4MB 线性地址空间
 	 */
-	uint32_t * pg_tab = (uint32_t *)PG_TAB_K;
+	uint32_t * pg_tab = PG_TAB_K;
 	uint32_t i;
 	// 内核已使用的页框置位
 	for (i = 0; i < to_fr_idx(ro_start_pa); i++) {
@@ -85,14 +85,14 @@ void mm_init()
 	}
 
 	// 设置页目录表
-	pg_tab = (uint32_t *)PG_DIR;
+	pg_tab = PG_DIR;
 	// 内核部分之前的页目录, 索引在 0x300 之前
 	for (i = 0; i < vaddr_to_dir(PAGE_OFFSET); i++) {
 		pg_tab[i] = PG_NULL;
 	}
 	// 0xC0000000 开始的 32MB
 	for (int k = 0; k < MAX_FRAME_NUM>>10/* 8 */; k++, i++) {
-		pg_tab[i] = to_paddr(PG_TAB_K + (k<<12)) | PG_PRESENT | PG_WRITE;
+		pg_tab[i] = (uint32_t)to_paddr(PG_TAB_K + (k<<12)) | PG_PRESENT | PG_WRITE;
 	}
 	// 剩余的页目录项
 	for (; i < 0x400; i++) {

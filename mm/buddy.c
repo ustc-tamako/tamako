@@ -1,4 +1,3 @@
-#include "buddy.h"
 #include "mm.h"
 #include "list.h"
 #include "printk.h"
@@ -11,13 +10,6 @@ struct buddy_desc
 	uint16_t  list_len;
 	list_node head;
 } buddy_desc;
-
-// 伙伴算法的页框管理操作集合
-mm_operations const buddy_operations = {
-	buddy_init,
-	buddy_alloc_frames,
-	buddy_free_frames
-};
 
 // 伙伴算法分配的连续页框数从 2^0 - 2^10 个
 #define MAX_ORDER	10
@@ -33,20 +25,41 @@ static uint32_t buddy_end_addr;
 // frame_t 类型中 flag 成员各位的意义
 // 第 5 位标记该页框是否用于伙伴系统
 #define BUDDY_VALID		0x10
-#define buddy_is_valid(fr)		((fr)->flag & BUDDY_VALID)
+
+static inline int buddy_is_valid(frame_t * fr)
+{
+	return fr->flag & BUDDY_VALID;
+}
+
 // 第 6 位标记该页框是否空闲
 #define BUDDY_FREE		0x20
-#define buddy_is_free(fr)		((fr)->flag & BUDDY_FREE)
+
+static inline int buddy_is_free(frame_t * fr)
+{
+	return fr->flag & BUDDY_FREE;
+}
+
 // 第 3-0 位标记该页框的 order
-#define buddy_order(fr)			((uint32_t)((fr)->flag) & 0xF)
-#define buddy_set_order(fr, od) \
-({ \
-	(fr)->flag = ((fr)->flag & ~0xF) | ((od) & 0xF); \
-})
+static inline uint32_t buddy_order(frame_t * fr)
+{
+	return fr->flag & 0xF;
+}
+
+static inline void buddy_set_order(frame_t * fr, uint32_t od)
+{
+	fr->flag = (fr->flag & ~0xF) | (od & 0xF);
+}
 
 // 获取指定页框的伙伴
-#define buddy_index(fr_idx, od)	((fr_idx) ^ (1<<(od)))
-#define buddy_frame(fr, od)		(frame_tab + buddy_index(fr_index(fr), (od)))
+static inline uint32_t buddy_index(uint32_t fr_idx, uint32_t od)
+{
+	return fr_idx ^ (1 << od);
+}
+
+static inline frame_t * buddy_frame(frame_t * fr, uint32_t od)
+{
+	return frame_tab + buddy_index(fr_index(fr), od);
+}
 
 /**
  * @brief 将输入页框数 n 向上转换为 2 的幂次数, 输出 order 是满足 2^order >= n * 的最小整数, 当 n 的值超出 MAX_ORDER 时, 返回 MAX_ORDER+1.
@@ -63,7 +76,7 @@ static inline uint32_t ceil_order(size_t n)
 	return order;
 }
 
-int buddy_init(void * addr, size_t n)
+static int buddy_init(void * addr, size_t n)
 {
 	if (((uint32_t)addr & (PAGE_SIZE-1)) != 0) {
 		error_log("Buddy Init", "Input address not aligned by frame size.");
@@ -82,7 +95,7 @@ int buddy_init(void * addr, size_t n)
 	}
 
 	// 对属于伙伴系统管理的所有页框进行初始化
-	uint32_t fr_idx = to_fr_idx((uint32_t)addr);
+	uint32_t fr_idx = to_fr_idx(addr);
 	frame_t * fr = frame_tab + fr_idx;
 	uint32_t i = 0;
 	while (i < n) {
@@ -180,7 +193,7 @@ static frame_t * __buddy_alloc(uint32_t order)
 	return fr;
 }
 
-void * buddy_alloc_frames(size_t n)
+static void * buddy_alloc_frames(size_t n)
 {
 	uint32_t order = ceil_order(n);
 	frame_t * fr = __buddy_alloc(order);
@@ -237,7 +250,7 @@ void * buddy_alloc_frames(size_t n)
 		spin_unlock(&buddy_dir_lock);
 	}
 
-	return (void *)fr_paddr(fr);
+	return fr_paddr(fr);
 }
 
 static void __buddy_free(frame_t * fr)
@@ -296,7 +309,7 @@ static void __buddy_free(frame_t * fr)
 	spin_unlock(&buddy_dir_lock);
 }
 
-int buddy_free_frames(void * addr, size_t n)
+static int buddy_free_frames(void * addr, size_t n)
 {
 	if (!buddy_valid_addr(addr)) {
 		error_log("Buddy Free", "Input address invalid.");
@@ -333,6 +346,13 @@ int buddy_free_frames(void * addr, size_t n)
 
 	return TRUE;
 }
+
+// 伙伴算法的页框管理操作集合
+mm_operations const buddy_operations = {
+	buddy_init,
+	buddy_alloc_frames,
+	buddy_free_frames
+};
 
 
 /**************************************************
@@ -380,14 +400,14 @@ void buddy_print()
 			// else {
 			// 	prev = container_of(fr->chain.prev->prev, frame_t, chain);
 			// }
-			// printk("Prev:%4d\tBase_addr:0x%08X\tOrder:%2d\n", fr_index(prev), fr_paddr(prev), prev->flag & 0xF);
+			// printk("Prev:%4d\tBase_addr:0x%08X\tOrder:%2d\n", fr_index(prev), (uint32_t)fr_paddr(prev), prev->flag & 0xF);
 			// if (fr->chain.next != &bd_desc->head) {
 			// 	next = container_of(fr->chain.next, frame_t, chain);
 			// }
 			// else {
 			// 	next = container_of(fr->chain.next->next, frame_t, chain);
 			// }
-			// printk("Next:%4d\tBase_addr:0x%08X\tOrder:%2d\n", fr_index(next), fr_paddr(next), next->flag & 0xF);
+			// printk("Next:%4d\tBase_addr:0x%08X\tOrder:%2d\n", fr_index(next), (uint32_t)fr_paddr(next), next->flag & 0xF);
 		}
 	}
 }

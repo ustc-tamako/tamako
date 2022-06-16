@@ -39,9 +39,15 @@ struct frame_t {
 extern frame_t frame_tab[MAX_FRAME_NUM];
 
 // 获取 frame_t 对象在 frame_tab 中的索引
-#define fr_index(fr)	((fr) - frame_tab)
+static inline uint32_t fr_index(frame_t * fr)
+{
+	return fr - frame_tab;
+}
 // 从 frame_t 对象获取其对应的页框首地址
-#define fr_paddr(fr)	(fr_index(fr) << 12)
+static inline void * fr_paddr(frame_t * fr)
+{
+	return (void *)(fr_index(fr) << 12);
+}
 // 物理地址到页框的转换
 #define to_fr_idx(pa)	((uint32_t)(pa) >> 12)
 #define to_fr(pa)		(frame_tab + to_fr_idx(pa))
@@ -62,20 +68,20 @@ typedef unsigned int page_t;
 #define PG_WRITE		0x2
 #define PG_USER			0x4
 // 页是否分配页框
-#define pg_mapped(pa)	((pa)&PG_PRESENT)
+#define pg_mapped(pa)	((uint32_t)(pa) & PG_PRESENT)
 
 // 虚拟地址偏移量 3GB
 #define PAGE_OFFSET		0xC0000000
 // 直接映射区域内的物理地址与虚拟地址转换
-#define to_vaddr(pa)	((uint32_t)(pa) + PAGE_OFFSET)
-#define to_paddr(va)	((uint32_t)(va) - PAGE_OFFSET)
+#define to_vaddr(pa)	((void *)((uint32_t)(pa) + PAGE_OFFSET))
+#define to_paddr(va)	((void *)((uint32_t)(va) - PAGE_OFFSET))
 
 // 从虚拟地址获取页目录号
-#define vaddr_to_dir(va)	((va)>>22)
+#define vaddr_to_dir(va)	((uint32_t)(va) >> 22)
 // 从虚拟地址获取页号
-#define vaddr_to_pg(va)		(((va)>>12) & 0x3FF)
+#define vaddr_to_pg(va)		(((uint32_t)(va) >> 12) & 0x3FF)
 // 从虚拟地址获取页偏移量
-#define vaddr_to_off(va)	((va)&0xFFF)
+#define vaddr_to_off(va)	((uint32_t)(va) & 0xFFF)
 
 /**
  * @brief 页框管理算法的操作结构体, 定义了必要的几种页框操作.
@@ -89,18 +95,28 @@ struct mm_operations {
 
 // 伙伴系统的页框管理操作
 extern mm_operations const buddy_operations;
-
 #define mm_ops	(&buddy_operations)
 
-// 分配和回收页框/页的宏
-#define alloc_frames(n)		mm_ops->alloc_frames(n)
-#define alloc_frame()		alloc_frames(1)
-#define alloc_pages(n)		(void *)to_vaddr(alloc_frames(n))
-#define alloc_page()		alloc_pages(1)
-#define free_frames(pa, n)	mm_ops->free_frames(pa, n)
-#define free_frame(pa)		free_frames(pa, 1)
-#define free_pages(va, n)	free_frames((void *)to_paddr(va), n)
-#define free_page(va)		free_pages(va, 1)
+// 页的分配和回收函数
+static inline void * alloc_pages(size_t n)
+{
+	return to_vaddr(mm_ops->alloc_frames(n));
+}
+
+static inline int free_pages(void * vaddr, size_t n)
+{
+	return mm_ops->free_frames(to_paddr(vaddr), n);
+}
+
+static inline void * alloc_page()
+{
+	return alloc_pages(1);
+}
+
+static inline int free_page(void * vaddr)
+{
+	return free_pages(vaddr, 1);
+}
 
 void mm_init();
 

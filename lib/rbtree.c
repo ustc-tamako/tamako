@@ -337,7 +337,7 @@ void rb_print(rb_tree * rb)
 	printk("\n");
 }
 
-void rb_main()
+void rb_test()
 {
 	rb_tree rb;
 	rb.root = rb_nullptr;
