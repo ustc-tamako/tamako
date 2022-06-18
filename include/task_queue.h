@@ -1,9 +1,10 @@
 #ifndef INCLUDE_TASK_QUEUE_H_
 #define INCLUDE_TASK_QUEUE_H_
 
-#include "sched.h"
-#include "debug.h"
 #include "spinlock.h"
+
+struct task_t;
+typedef struct task_t task_t;
 
 typedef
 struct task_queue_t

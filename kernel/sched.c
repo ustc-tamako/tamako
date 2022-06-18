@@ -5,18 +5,13 @@
 #include "pid.h"
 #include "task_queue.h"
 
-#define STACK_SIZE	PAGE_SIZE
-
 task_t * task_tbl[NR_TASKS];
 
 // 内核栈, 按页对齐
 static uint32_t kern_stack[STACK_SIZE>>2] __attribute__((aligned(STACK_SIZE)));
 uint32_t * stack_bottom = &kern_stack[STACK_SIZE>>2];
 
-task_t * const task_idle = (task_t *)kern_stack;
-
-extern sched_operations const rr_operations;
-#define sched_ops	(&rr_operations)
+static task_t * const task_idle = (task_t *)kern_stack;
 
 static task_queue_t _sleep_queue;
 #define sleep_que	(&_sleep_queue)
@@ -27,16 +22,6 @@ static task_queue_t _zombie_queue;
 #define IDEL_PRIO	(NR_PRIO - 1)
 #define INIT_PRIO	(NR_PRIO - 2)
 #define DAEMON_PRIO	(NR_PRIO - 4)
-
-// 获取当前线程
-#define current get_current()
-
-static inline task_t * get_current()
-{
-	task_t * cur;
-	__asm__ __volatile__ ("and %%esp, %0" : "=r" (cur) : "0" (~(STACK_SIZE-1))); // task_t 存放在栈的低地址处, 通过 esp & 0xFFFFF000 得到
-	return cur;
-}
 
 static void task_init(task_t * task, uint8_t prio, char * name)
 {
@@ -309,7 +294,11 @@ void task_print()
 	}
 }
 
+#include "semaphore.h"
+
 static int flag = 0;
+static semaphore_t sem1;
+static semaphore_t sem2;
 
 static int test_thread1()
 {
@@ -320,9 +309,15 @@ static int test_thread1()
 			flag = 1;
 			cnt++;
 		}
-		if (cnt == 10) {
+		if (cnt == 5) {
 			break;
 		}
+	}
+
+	for (int i = 0; i < 5; i++) {
+		sem_wait(&sem1);
+		printk("A");
+		sem_post(&sem2);
 	}
 	return 0;
 }
@@ -332,19 +327,31 @@ static int test_thread2()
 	int cnt = 0;
 	while (1) {
 		if (flag & 1) {
-			printk("B\n");
+			printk("B");
 			flag = 0;
 			cnt++;
 		}
-		if (cnt == 10) {
+		if (cnt == 5) {
 			break;
 		}
 	}
+	printk("\n");
+	sem_post(&sem1);
+
+	for (int i = 0; i < 5; i++) {
+		sem_wait(&sem2);
+		printk("B");
+		sem_post(&sem1);
+	}
+	printk("\n");
 	return 0;
 }
 
 void sched_test()
 {
+	sem_init(&sem1, 0);
+	sem_init(&sem2, 0);
+
 	kernel_thread(test_thread1, NULL, 33, NULL);
 	kernel_thread(test_thread2, NULL, 33, NULL);
 	task_print();
