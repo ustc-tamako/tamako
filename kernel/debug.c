@@ -59,11 +59,13 @@ extern void buddy_test();
 extern void kmalloc_test();
 extern void sched_test();
 
-void test()
+int test()
 {
 	kmalloc_test();
 	buddy_test();
 	sched_test();
 
 	no_bug_please();
+
+	return 0;
 }

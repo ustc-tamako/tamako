@@ -12,6 +12,6 @@ void warning_log(const char * type, const char * msg);
 
 void error_log(const char * type, const char * msg);
 
-void test();
+int test();
 
 #endif  // INCLUDE_DEBUG_H_

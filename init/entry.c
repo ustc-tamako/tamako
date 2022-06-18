@@ -9,7 +9,6 @@
 #include "sched.h"
 #include "common.h"
 
-
 int kern_entry()
 {
 	setup_gdt();
@@ -23,11 +22,11 @@ int kern_entry()
 
 	sti();
 
-	init();
+	kernel_thread(init, NULL, 0);
 
-	test();
-
-	while (1);
+	while (1) {
+		__asm__ __volatile__ ("pause\n");
+	}
 
 	return 0;
 }

@@ -6,7 +6,7 @@
 #include "printk.h"
 
 #define FREQ_IN     1193180
-#define FREQ_OUT    5
+#define FREQ_OUT    200		// 5 ms
 
 // 8253/8254 PIT 寄存器
 #define PIT_TIMER   0x40
@@ -16,8 +16,7 @@ void clk_intr(pt_regs_t * regs)
 {
 	static uint32_t tick = 0;
 	tick++;
-	schedule();
-	// printk("Tick: %d\n", tick);
+	sched_tick();
 }
 
 void clk_init()
