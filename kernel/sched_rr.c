@@ -53,7 +53,7 @@ static void rr_enqueue(task_t * task)
 {
 	spin_lock(&rr.lock);
 	uint8_t prio = task->prio;
-	list_add_tail(&task->chain, &rr.queue[prio]);
+	list_add_tail(&task->queue_node, &rr.queue[prio]);
 	rr.n_tasks++;
 	rr.bit_tbl[prio >> 3] |= rr_map[prio & 0x07];
 	rr.bit_grp |= rr_map[prio >> 3];
@@ -64,7 +64,7 @@ static void rr_dequeue(task_t * task)
 {
 	spin_lock(&rr.lock);
 	uint8_t prio = task->prio;
-	list_del(&task->chain);
+	list_del(&task->queue_node);
 	rr.n_tasks--;
 	if (list_is_empty(&rr.queue[prio])) {
 		rr.bit_tbl[prio >> 3] &= ~rr_map[prio & 0x07];
@@ -81,15 +81,15 @@ static task_t * rr_pick_next()
 	uint8_t y = rr_unmap[rr.bit_grp];
 	uint8_t x = rr_unmap[rr.bit_tbl[y]];
 	uint8_t prio = (y << 3) + x;
-	task_t * next = container_of(list_first(&rr.queue[prio]), task_t, chain);
-	list_del(&next->chain);
-	list_add_tail(&next->chain, &rr.queue[prio]);
+	task_t * next = container_of(list_first(&rr.queue[prio]), task_t, queue_node);
+	list_del(&next->queue_node);
+	list_add_tail(&next->queue_node, &rr.queue[prio]);
 	spin_unlock(&rr.lock);
 
 	return next;
 }
 
-scheduler_t const rr_scheduler = {
+sched_operations const rr_operations = {
 	rr_init,
 	rr_enqueue,
 	rr_dequeue,

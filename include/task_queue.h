@@ -23,7 +23,7 @@ static void tq_init(task_queue_t * tq)
 static void tq_enqueue(task_queue_t * tq, task_t * task)
 {
 	spin_lock(&tq->lock);
-	list_add_tail(&task->chain, &tq->head);
+	list_add_tail(&task->queue_node, &tq->head);
 	tq->n_tasks++;
 	spin_unlock(&tq->lock);
 }
@@ -31,7 +31,7 @@ static void tq_enqueue(task_queue_t * tq, task_t * task)
 static void tq_dequeue(task_queue_t * tq, task_t * task)
 {
 	spin_lock(&tq->lock);
-	list_del(&task->chain);
+	list_del(&task->queue_node);
 	tq->n_tasks--;
 	spin_unlock(&tq->lock);
 }
@@ -41,7 +41,7 @@ static task_t * tq_pick_next(task_queue_t * tq)
 	task_t * next = NULL;
 	spin_lock(&tq->lock);
 	if (tq->n_tasks > 0) {
-		next = container_of(list_first(&tq->head), task_t, chain);
+		next = container_of(list_first(&tq->head), task_t, queue_node);
 	}
 	spin_unlock(&tq->lock);
 	return next;

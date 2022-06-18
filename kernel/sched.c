@@ -15,14 +15,18 @@ uint32_t * stack_bottom = &kern_stack[STACK_SIZE>>2];
 
 task_t * const task_idle = (task_t *)kern_stack;
 
-extern scheduler_t const rr_scheduler;
-#define scheduler	(&rr_scheduler)
+extern sched_operations const rr_operations;
+#define sched_ops	(&rr_operations)
 
 static task_queue_t _sleep_queue;
 #define sleep_que	(&_sleep_queue)
 
 static task_queue_t _zombie_queue;
 #define zombie_que	(&_zombie_queue)
+
+#define IDEL_PRIO	(NR_PRIO - 1)
+#define INIT_PRIO	(NR_PRIO - 2)
+#define DAEMON_PRIO	(NR_PRIO - 4)
 
 // 获取当前线程
 #define current get_current()
@@ -34,26 +38,92 @@ static inline task_t * get_current()
 	return cur;
 }
 
-static inline void task_init(task_t * task, uint8_t prio)
+static void task_init(task_t * task, uint8_t prio, char * name)
 {
 	task->pid = alloc_pid();
 	task_tbl[task->pid] = task;
 	task->prio = prio;
+	task->name = name == NULL ? current->name : name;
+
+	spin_lock(&current->lock);
+	task->parent = current;
+	list_node_init(&task->children);
+	list_add_tail(&task->sibling, &current->children);
+	spin_unlock(&current->lock);
+
 	task->time_ticks = prio + 1;
 	task->rest_ticks = task->time_ticks;
 	task->total_ticks = 0;
 	task->sleep_ticks = 0;
+
+	task->wait_for = NULL;
+	task->lock = SPINLOCK_FREE;
+}
+
+static void task_exit(task_t * task)
+{
+	task_t * parent = task->parent;
+	spin_lock(&parent->lock);
+	list_del(&task->sibling);
+
+	spin_lock(&task->lock);
+	task_t * child = NULL;
+	task_t temp;
+	list_for_each_entry(child, &task->children, sibling) {
+		list_del(&child->sibling);
+		temp = *child;
+		list_add_tail(&child->sibling, &parent->children);
+		child->parent = parent;
+		child = &temp;
+	}
+
+	if (parent->stat == TASK_WAITING
+		&& parent->wait_for == NULL
+		&& list_is_empty(&parent->children)) {
+		parent->stat = TASK_READY;
+		sched_ops->enqueue(parent);
+	}
+
+	spin_unlock(&task->lock);
+	spin_unlock(&parent->lock);
+}
+
+static void task_kill(task_t * task)
+{
+	task_tbl[task->pid] = NULL;
+	free_pid(task->pid);
+	free_page(task);	// 回收该线程的栈
+}
+
+static void task_reset_prio(task_t * task, uint8_t prio)
+{
+	spin_lock(&task->lock);
+	if (task->stat == TASK_READY) {
+		sched_ops->dequeue(task);
+	}
+	task->prio = prio;
+	task->time_ticks = prio + 1;
+	if (task->stat == TASK_READY) {
+		sched_ops->enqueue(task);
+	}
+	spin_unlock(&task->lock);
+	if (task == current) {
+		schedule();
+	}
 }
 
 void sched_init()
 {
-	scheduler->init();
+	sched_ops->init();
 	tq_init(sleep_que);
 	tq_init(zombie_que);
 
 	// idle
-	task_init(task_idle, NR_PRIO - 1);
-	scheduler->enqueue(task_idle);
+	task_init(task_idle, IDEL_PRIO, "idle");
+	task_idle->parent = NULL;
+	list_node_init(&task_idle->children);
+	list_node_init(&task_idle->sibling);
+	sched_ops->enqueue(task_idle);
 	task_idle->stat = TASK_READY;
 }
 
@@ -63,7 +133,7 @@ extern void switch_to(task_t * prev, task_t * next);
 void schedule()
 {
 	cli();
-	task_t * next = scheduler->pick_next();
+	task_t * next = sched_ops->pick_next();
 	if (current != next) {
 		switch_to(current, next);
 	}
@@ -72,25 +142,25 @@ void schedule()
 
 void sched_tick()
 {
-	int need_schedule = 0;
+	bool need_schedule = FALSE;
 	current->rest_ticks--;
 	current->total_ticks++;
 	if (current->rest_ticks == 0) {
 		current->rest_ticks = current->time_ticks;
-		need_schedule = 1;
+		need_schedule = TRUE;
 	}
 
 	task_t * task = NULL;
 	task_t temp;
-	list_for_each_entry(task, &sleep_que->head, chain) {
+	list_for_each_entry(task, &sleep_que->head, queue_node) {
 		task->sleep_ticks--;
 		if (task->sleep_ticks == 0) {
 			tq_dequeue(sleep_que, task);
 			task->stat = TASK_READY;
 			temp = *task;
-			scheduler->enqueue(task);
+			sched_ops->enqueue(task);
 			task = &temp;
-			need_schedule = 1;
+			need_schedule = TRUE;
 		}
 	}
 
@@ -99,13 +169,39 @@ void sched_tick()
 	}
 }
 
+void sleep(uint32_t ticks)
+{
+	sched_ops->dequeue(current);
+	current->sleep_ticks = ticks;
+	current->stat = TASK_SLEEP;
+	tq_enqueue(sleep_que, current);
+	schedule();
+}
+
+void wakeup(task_t * task)
+{
+	tq_dequeue(sleep_que, task);
+	task->sleep_ticks = 0;
+	task->stat = TASK_READY;
+	sched_ops->enqueue(task);
+	schedule();
+}
+
+void wait()
+{
+	sched_ops->dequeue(current);
+	current->stat = TASK_WAITING;
+	schedule();
+}
+
 // 内核线程退出
 static void kthread_exit(int stat)
 {
 	if (stat == 0) {
-		scheduler->dequeue(current);
-		tq_enqueue(zombie_que, current);
+		sched_ops->dequeue(current);
+		task_exit(current);
 		current->stat = TASK_ZOMBIE;
+		tq_enqueue(zombie_que, current);
 		schedule();
 	}
 }
@@ -118,7 +214,7 @@ static void kexec(int (* fn)(void *), void * args)
 }
 
 // 创建内核线程
-uint32_t kernel_thread(int (* fn)(void *), void * args, uint8_t prio)
+uint32_t kernel_thread(int (* fn)(void *), void * args, uint8_t prio, char * name)
 {
 	// 给线程栈分配一个页, task_t 位于页的低地址处
 	task_t * new_task = (task_t *)alloc_page();
@@ -137,15 +233,15 @@ uint32_t kernel_thread(int (* fn)(void *), void * args, uint8_t prio)
 	}
 	new_task->esp = esp;
 
-	task_init(new_task, prio);
+	task_init(new_task, prio, name);
 
 	// 将新任务加入就绪队列
-	scheduler->enqueue(new_task);
 	new_task->stat = TASK_READY;
+	sched_ops->enqueue(new_task);
 
 	schedule();
 
-	return 0;
+	return new_task->pid;
 }
 
 // 负责回收僵尸线程资源的线程
@@ -159,9 +255,7 @@ static int kkill_zombie()
 		}
 		else {
 			tq_dequeue(zombie_que, task);
-			task_tbl[task->pid] = NULL;
-			free_pid(task->pid);
-			free_page(task);	// 回收该线程的栈
+			task_kill(task);
 		}
 	}
 
@@ -179,20 +273,16 @@ static int kfree_km_cache()
 
 int init()
 {
-	kernel_thread(kkill_zombie, NULL, NR_PRIO - 2);
-	kernel_thread(kfree_km_cache, NULL, NR_PRIO - 2);
-	kernel_thread(test, NULL, 60);
+	kernel_thread(kkill_zombie, NULL, DAEMON_PRIO, "kkill_zombie");
+	kernel_thread(kfree_km_cache, NULL, DAEMON_PRIO, "kfree_km_cache");
+
+	kernel_thread(test, NULL, 32, "test_thread");
+
+	task_reset_prio(current, INIT_PRIO);
+
+	while (1);
 
 	return 0;
-}
-
-void sleep(uint32_t ticks)
-{
-	scheduler->dequeue(current);
-	tq_enqueue(sleep_que, current);
-	current->sleep_ticks = ticks;
-	current->stat = TASK_SLEEP;
-	schedule();
 }
 
 /**************************************************
@@ -203,10 +293,18 @@ void sleep(uint32_t ticks)
 
 void task_print()
 {
+	char * task_stat_strtab[] = {"RD", "SL", "WA", "ZB"};
 	info_log("Task", "");
+	printk("\033[01m%2s  %14s    %2s     %4s     %2s    %2s    %5s\033[0m\n", "ID", "NAME", "ST", "STK", "PR", "PA", "TIME");
 	for (int i = 0; i < NR_TASKS; i++) {
 		if (task_tbl[i] != NULL) {
-			printk("Task\033[032m<%4d>\033[0m\t|ID_%02d|PR_%02d|\n", to_fr_idx(to_paddr(task_tbl[i])), task_tbl[i]->pid, task_tbl[i]->prio);
+			printk("%02d  %14s    %2s    \033[032m<%4d>\033[0m    %02d    %02d    %5d\n", task_tbl[i]->pid,
+			task_tbl[i]->name,
+			task_stat_strtab[task_tbl[i]->stat],
+			to_fr_idx(to_paddr(task_tbl[i])),
+			task_tbl[i]->prio,
+			task_tbl[i]->parent == NULL ? 0 : task_tbl[i]->parent->pid,
+			task_tbl[i]->total_ticks);
 		}
 	}
 }
@@ -215,7 +313,6 @@ static int flag = 0;
 
 static int test_thread1()
 {
-	sleep(10);
 	int cnt = 0;
 	while (1) {
 		if (!(flag & 1)) {
@@ -232,7 +329,6 @@ static int test_thread1()
 
 static int test_thread2()
 {
-	sleep(10);
 	int cnt = 0;
 	while (1) {
 		if (flag & 1) {
@@ -249,7 +345,13 @@ static int test_thread2()
 
 void sched_test()
 {
-	kernel_thread(test_thread1, NULL, 33);
-	kernel_thread(test_thread2, NULL, 33);
+	kernel_thread(test_thread1, NULL, 33, NULL);
+	kernel_thread(test_thread2, NULL, 33, NULL);
+	task_print();
+
+	wait();
+	task_print();
+
+	sleep(10);
 	task_print();
 }

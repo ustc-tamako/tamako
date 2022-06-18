@@ -22,7 +22,7 @@ int kern_entry()
 
 	sti();
 
-	kernel_thread(init, NULL, 0);
+	kernel_thread(init, NULL, 0, "init");
 
 	while (1) {
 		__asm__ __volatile__ ("pause\n");

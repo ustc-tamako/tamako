@@ -5,9 +5,14 @@
 	#define NULL 0
 #endif
 
-#ifndef TRUE
-	#define TRUE  1
-	#define FALSE 0
+#ifndef BOOL
+
+typedef
+enum bool {
+	FALSE = 0,
+	TRUE = 1
+} bool;
+
 #endif
 
 /*

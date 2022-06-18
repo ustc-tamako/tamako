@@ -281,8 +281,7 @@ rb_node * rb_last(rb_tree * rb)
 	return rb_nullptr;
 }
 
-/**
- * Example code
+#ifdef __ABORT__
 
 #include "common.h"
 #include "mm.h"
@@ -374,4 +373,4 @@ void rb_test()
 	printk("\n");
 }
 
- */
+#endif
