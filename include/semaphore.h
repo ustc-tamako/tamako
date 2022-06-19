@@ -2,7 +2,6 @@
 #define INCLUDE_SEMAPHORE_H_
 
 #include "types.h"
-#include "sched.h"
 #include "task_queue.h"
 
 typedef

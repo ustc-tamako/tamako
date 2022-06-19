@@ -281,16 +281,16 @@ void task_print()
 	char * task_stat_strtab[] = {"RD", "SL", "WA", "ZB"};
 	info_log("Task", "");
 	printk("\033[01m%2s  %14s    %2s     %4s     %2s    %2s    %5s\033[0m\n", "ID", "NAME", "ST", "STK", "PR", "PA", "TIME");
-	for (int i = 0; i < NR_TASKS; i++) {
-		if (task_tbl[i] != NULL) {
-			printk("%02d  %14s    %2s    \033[032m<%4d>\033[0m    %02d    %02d    %5d\n", task_tbl[i]->pid,
-			task_tbl[i]->name,
-			task_stat_strtab[task_tbl[i]->stat],
-			to_fr_idx(to_paddr(task_tbl[i])),
-			task_tbl[i]->prio,
-			task_tbl[i]->parent == NULL ? 0 : task_tbl[i]->parent->pid,
-			task_tbl[i]->total_ticks);
-		}
+	task_t * task = NULL;
+	for_each_task(task) {
+		printk("%02d  %14s    %2s    \033[032m<%4d>\033[0m    %02d    %02d    %5d\n",
+		task->pid,
+		task->name,
+		task_stat_strtab[task->stat],
+		to_fr_idx(to_paddr(task)),
+		task->prio,
+		task->parent == NULL ? 0 : task->parent->pid,
+		task->total_ticks);
 	}
 }
 

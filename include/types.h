@@ -6,6 +6,7 @@
 #endif
 
 #ifndef BOOL
+#define BOOL
 
 typedef
 enum bool {

@@ -40,6 +40,10 @@ struct task_t
 #define NR_TASKS	256
 extern task_t * task_tbl[NR_TASKS];
 
+#define for_each_task(task) \
+	for (int i = 0; i < NR_TASKS; i++) \
+		if ((task = task_tbl[i]) != NULL)
+
 #define STACK_SIZE	0x1000
 // 获取当前线程
 #define current get_current()

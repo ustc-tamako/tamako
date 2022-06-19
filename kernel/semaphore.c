@@ -1,4 +1,5 @@
 #include "semaphore.h"
+#include "sched.h"
 
 void __sem_wait(semaphore_t * sem)
 {

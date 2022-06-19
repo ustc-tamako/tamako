@@ -1,5 +1,4 @@
 #include "sched.h"
-#include "spinlock.h"
 #include "string.h"
 
 static uint8_t const rr_map[8] = {
