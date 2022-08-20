@@ -6,16 +6,16 @@
 #include "spinlock.h"
 
 // 内存页(框)大小 4KB
-#define FRAME_SIZE		0x1000
-#define PAGE_SIZE		0x1000
+#define FRAME_SIZE	0x1000
+#define PAGE_SIZE	0x1000
 // 最大物理内存大小 32MB
-#define MAX_MM_SIZE		0x02000000
+#define MAX_MM_SIZE	0x02000000
 // 最多支持的页框个数 8K
 #define MAX_FRAME_NUM	(MAX_MM_SIZE / FRAME_SIZE)
 // 最多支持的页个数
 #define MAX_PAGE_NUM	(MAX_VM_SIZE / PAGE_SIZE)
 // 当页未分配页框时页表项的默认值
-#define PG_NULL			0
+#define PG_NULL		0
 
 /**
  * @brief 用于物理页框管理的结构体.
@@ -50,7 +50,7 @@ static inline void * fr_paddr(frame_t * fr)
 }
 // 物理地址到页框的转换
 #define to_fr_idx(pa)	((uint32_t)(pa) >> 12)
-#define to_fr(pa)		(frame_tab + to_fr_idx(pa))
+#define to_fr(pa)	(frame_tab + to_fr_idx(pa))
 
 /**
  *  @brief page_t
@@ -64,14 +64,14 @@ static inline void * fr_paddr(frame_t * fr)
 typedef unsigned int page_t;
 
 // 页表项 Flag
-#define PG_PRESENT		0x1
-#define PG_WRITE		0x2
-#define PG_USER			0x4
+#define PG_PRESENT	0x1
+#define PG_WRITE	0x2
+#define PG_USER		0x4
 // 页是否分配页框
 #define pg_mapped(pa)	((uint32_t)(pa) & PG_PRESENT)
 
 // 虚拟地址偏移量 3GB
-#define PAGE_OFFSET		0xC0000000
+#define PAGE_OFFSET	0xC0000000
 // 直接映射区域内的物理地址与虚拟地址转换
 #define to_vaddr(pa)	((void *)((uint32_t)(pa) + PAGE_OFFSET))
 #define to_paddr(va)	((void *)((uint32_t)(va) - PAGE_OFFSET))
@@ -90,7 +90,7 @@ typedef
 struct mm_operations {
 	int 	(* init)(void * addr, size_t n); // 页框管理初始化
 	void *	(* alloc_frames)(size_t n); // 分配 n 个连续页框
-	int		(* free_frames)(void * addr, size_t n); // 回收指定地址开始的 n 个连续页框
+	int	(* free_frames)(void * addr, size_t n); // 回收指定地址开始的 n 个连续页框
 } mm_operations;
 
 // 伙伴系统的页框管理操作

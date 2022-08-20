@@ -6,7 +6,7 @@
 typedef
 struct rb_node
 {
-	uint32_t		 __color_parent;	// 该成员最后 2 位用来保存颜色
+	uint32_t         __color_parent;  // 该成员最后 2 位用来保存颜色
 	struct rb_node * left;
 	struct rb_node * right;
 } __attribute__((packed)) rb_node;
@@ -23,7 +23,7 @@ struct rb_tree
 
 extern rb_node const	__rb_null;
 
-#define rb_nullptr		(rb_node *)&__rb_null
+#define rb_nullptr	(rb_node *)&__rb_null
 
 static inline rb_node * rb_parent(rb_node * nd)
 {

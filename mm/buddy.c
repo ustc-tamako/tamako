@@ -459,12 +459,12 @@ void buddy_test()
 	buddy_free_frames(frames[1], 1);
 	buddy_free_frames(frames[2], 1);
 	buddy_free_frames(frames[3], 8);
-    buddy_free_frames(frames[4], 16);
-    buddy_free_frames(frames[5], 18);
-    buddy_free_frames(frames[6], 27);
-    buddy_free_frames(frames[7], 32);
-    buddy_free_frames(frames[8], 129);
-    buddy_free_frames(frames[9], 547);
+	buddy_free_frames(frames[4], 16);
+	buddy_free_frames(frames[5], 18);
+	buddy_free_frames(frames[6], 27);
+	buddy_free_frames(frames[7], 32);
+	buddy_free_frames(frames[8], 129);
+	buddy_free_frames(frames[9], 547);
 
 	buddy_print();
 }

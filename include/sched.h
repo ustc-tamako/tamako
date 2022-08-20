@@ -21,9 +21,10 @@ struct task_t
 {
 	uint32_t           * esp;
 	spinlock_t           lock;
-	uint8_t		         pid;
+	uint8_t              pid;
 	uint8_t              prio;
 	char               * name;
+	task_stat_t          stat;
 	struct task_t      * parent;
 	list_node            children;		// 子任务链表头
 	list_node            sibling;		// 兄弟任务链表节点
@@ -31,7 +32,6 @@ struct task_t
 	uint32_t             rest_ticks;
 	uint32_t             total_ticks;
 	uint32_t             sleep_ticks;
-	task_stat_t          stat;
 	struct semaphore_t * wait_for;
 	list_node            queue_node;	// 任务队列链表节点
 } task_t;
@@ -75,8 +75,8 @@ void sched_tick();
 
 uint32_t kernel_thread(int (* fn)(void *),
                        void * args,
-					   uint8_t prio,
-					   char * name);
+                       uint8_t prio,
+                       char * name);
 
 void sleep(uint32_t ticks);
 

@@ -22,7 +22,7 @@ struct _bucket_desc {
 
 // 桶目录
 static _bucket_desc bucket_dir[] = {
-	{8,		0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 8B
+	{8,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 8B
 	{16,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 16B
 	{32,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 32B
 	{64,	0,	(bucket_desc *)NULL, SPINLOCK_FREE}, // 64B
@@ -50,7 +50,7 @@ struct cache_desc {
 
 // 对象缓存目录
 static cache_desc cache_dir[] = {
-	{8,		0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 8B
+	{8,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 8B
 	{16,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 16B
 	{32,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 32B
 	{64,	0,	(uint32_t *)NULL, SPINLOCK_FREE}, // 64B
